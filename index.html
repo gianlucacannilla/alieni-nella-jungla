@@ -33,9 +33,9 @@
   .touch #weapon{bottom:auto;top:12px;font-size:16px}
   .touch #info{font-size:14px}
   .touch #hint{bottom:auto;top:62%}
-  #screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000b;text-align:center;cursor:pointer;touch-action:manipulation;padding:16px;box-sizing:border-box}
-  #screen h1{font-size:clamp(30px,7vw,52px);color:#7f7;margin:0 0 12px}
-  #screen p{font-size:clamp(14px,2.5vw,18px);line-height:1.6;max-width:640px}
+  #screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000d;text-align:center;cursor:pointer;touch-action:manipulation;padding:16px;box-sizing:border-box}
+  #screen h1{font-size:clamp(24px,min(7vw,9vh),52px);color:#7f7;margin:0 0 1vh}
+  #screen p{font-size:clamp(12px,min(2.5vw,3.6vh),18px);line-height:1.6;max-width:680px;margin:0}
   #screen b{color:#ffa030}
 </style>
 </head>
@@ -74,12 +74,26 @@ const clamp = THREE.MathUtils.clamp;
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 if (isTouch) { document.body.classList.add('touch'); $('touch').style.display = 'block'; }
 
-$('sub').innerHTML = (isTouch
-  ? 'Joystick a sinistra per muoverti · trascina a destra per mirare<br>SPARA (puoi anche trascinarlo per mirare) · SALTA · APRI casse · ARMA cambia arma<br>Meglio con il telefono in orizzontale!'
-  : 'WASD muovi · Mouse mira · Click spara · Shift corri · Spazio salta<br>E apri le casse · Q cambia arma')
-  + "<br><br>Attraversa la giungla, sconfiggi la <b>REGINA ALIENA</b> e raggiungi l'<b>USCITA</b>.<br>"
-  + 'Ogni 2 casse compare una trasformazione: <b>DRAGO DI FUOCO</b> o <b>LUPO FOLGORE</b>!<br><br><b>'
-  + (isTouch ? 'Tocca' : 'Clicca') + ' per giocare</b>';
+// ---------- livelli: ognuno più difficile del precedente (mul = moltiplicatore di vita, danno, velocità) ----------
+const LEVELS = [
+  { name: 'GIUNGLA ALIENA', sky: 0x2a4a2a, ground: 0x2f5a22, enemy: 'alien', foes: 'Alieni', boss: 'REGINA ALIENA', bossHp: 15000, blood: 0x66ff33, spit: 0x99ff22, mul: 1 },
+  { name: 'DESERTO DEGLI ZOMBI', sky: 0xb89a6a, ground: 0xd2b47a, enemy: 'zombie', foes: 'Zombi', boss: 'RE DEGLI ZOMBI', bossHp: 22000, blood: 0x8a1010, spit: 0x7a9a30, mul: 1.4 },
+  { name: 'CITTÀ DEGLI ORCHI', sky: 0x4a4a5a, ground: 0x505058, enemy: 'orc', foes: 'Orchi', boss: 'ORCO SUPREMO', bossHp: 30000, blood: 0x30a030, spit: 0x888888, mul: 1.8 },
+];
+// shortcut: il livello passa via URL e ricarica la pagina, quindi armi e vita ripartono da zero a ogni livello
+const LV = clamp(parseInt(new URLSearchParams(location.search).get('livello')) || 1, 1, LEVELS.length) - 1;
+const CFG = LEVELS[LV];
+$('title').textContent = CFG.name;
+$('boss').firstChild.textContent = CFG.boss;
+
+$('sub').innerHTML =
+  `🎯 <b>Livello ${LV + 1}/${LEVELS.length}</b>: attraversa il percorso, sconfiggi il boss <b>${CFG.boss}</b> e raggiungi l'<b>USCITA</b>.<br>`
+  + (isTouch
+    ? '🎮 Joystick a sinistra · trascina a destra per mirare · SPARA · SALTA · APRI casse · ARMA cambia arma<br>'
+    : '🎮 WASD muovi · Mouse mira · Click spara · Shift corri · Spazio salta · E apri casse · Q cambia arma<br>')
+  + '🔫 A terra: Fucile a pompa, Minigun · Nelle casse: Lanciarazzi, Laser, <b>Plasma</b>, <b>Railgun</b>, <b>Testata Nucleare</b><br>'
+  + '🐉 Ogni 2 casse una trasformazione per 20s: <b>DRAGO DI FUOCO</b> 🔥, <b>LUPO FOLGORE</b> ⚡, <b>SERPENTE DELLE TEMPESTE</b> 🌪️ (vola e lancia tornado!), uccidono i nemici in un colpo<br><br><b>'
+  + (isTouch ? 'Tocca per giocare' : 'Clicca per giocare') + '</b>';
 
 // ---------- audio (sintetizzato, nessun file) ----------
 let AC = null, noiseBuf = null;
@@ -115,8 +129,12 @@ const SFX = {
   minigun: () => snd('noise', 4000, 500, 0.04, 0.15),
   rocket: () => snd('sawtooth', 200, 60, 0.4, 0.2),
   laser: () => snd('sawtooth', 1800, 200, 0.25, 0.15),
+  plasma: () => snd('square', 900, 300, 0.07, 0.12),
+  railgun: () => { snd('sawtooth', 3000, 100, 0.5, 0.25); snd('noise', 8000, 500, 0.3, 0.3); },
+  nuke: () => { snd('sine', 60, 20, 2.5, 0.8); snd('noise', 800, 30, 2.5, 0.7); },
   boom: () => { snd('noise', 1200, 40, 0.8, 0.6); snd('sine', 90, 30, 0.6, 0.5); },
   fire: () => snd('noise', 900, 250, 0.18, 0.18),
+  wind: () => { snd('noise', 300, 1800, 0.7, 0.35); snd('sine', 120, 260, 0.7, 0.1); },
   zap: () => { snd('sawtooth', 2500, 80, 0.2, 0.2); snd('noise', 6000, 1000, 0.15, 0.25); },
   die: () => snd('square', 500, 60, 0.25, 0.1),
   hurt: () => snd('sawtooth', 220, 90, 0.2, 0.25),
@@ -135,9 +153,8 @@ renderer.setPixelRatio(isTouch ? 1 : Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 document.body.prepend(renderer.domElement);
 const scene = new THREE.Scene();
-const SKY = 0x2a4a2a;
-scene.background = new THREE.Color(SKY);
-scene.fog = new THREE.Fog(SKY, 15, 90);
+scene.background = new THREE.Color(CFG.sky);
+scene.fog = new THREE.Fog(CFG.sky, 15, 90);
 const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 300);
 // controllato a ogni frame: su telefono l'evento resize alla rotazione arriva con misure vecchie
 function fit() {
@@ -145,16 +162,16 @@ function fit() {
   if (c.clientWidth === w && c.clientHeight === h) return;
   camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.setSize(w, h);
 }
-scene.add(new THREE.HemisphereLight(0xcfffcf, 0x223311, 1.3));
+scene.add(new THREE.HemisphereLight(LV ? 0xffffff : 0xcfffcf, LV ? 0x554433 : 0x223311, 1.3)); // luce verdognola solo nella giungla
 const sun = new THREE.DirectionalLight(0xffffee, 1.2); sun.position.set(30, 50, 10); scene.add(sun);
 
 const M = (color, emissive = 0) => new THREE.MeshLambertMaterial({ color, emissive });
 const B = color => new THREE.MeshBasicMaterial({ color });
 const mesh = (geo, mat, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); return m; };
 
-const LEN = 400, W = 60; // la giungla va da z=0 a z=-LEN; il boss è vicino a z=-LEN
+const LEN = 400, W = 60; // il percorso va da z=0 a z=-LEN; il boss è vicino a z=-LEN
 
-const ground = mesh(new THREE.PlaneGeometry(W * 2 + 60, LEN + 100), M(0x2f5a22), 0, 0, -LEN / 2);
+const ground = mesh(new THREE.PlaneGeometry(W * 2 + 60, LEN + 100), M(CFG.ground), 0, 0, -LEN / 2);
 ground.rotation.x = -Math.PI / 2; scene.add(ground);
 
 const crateSpots = [], gunSpots = [];
@@ -162,13 +179,61 @@ for (let i = 0; i < 24; i++) crateSpots.push(V(rnd(-35, 35), 0, -12 - i * 15 + r
 for (let i = 0; i < 12; i++) gunSpots.push(V(rnd(-20, 20), 0, -25 - i * 28 + rnd(-8, 8)));
 const freeSpots = [...crateSpots, ...gunSpots, V(0, 0, 0)];
 
-const trees = [];
+// ostacoli del livello, tutti con collisione a cerchio {x, z, r}
+const trees = [], o = new THREE.Object3D(), col = new THREE.Color();
+// libero dalla radura del boss, da casse e armi
+const okSpot = (x, z, pad) => Math.hypot(x, z + LEN) > 24 + pad && !freeSpots.some(s => Math.hypot(s.x - x, s.z - z) < 4 + pad);
+const deco = (geo, color, n, place) => {
+  const im = new THREE.InstancedMesh(geo, M(color), n);
+  for (let i = 0; i < n; i++) { o.rotation.set(0, 0, 0); place(i); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }
+  scene.add(im); return im;
+};
+if (CFG.enemy === 'alien') buildJungle();
+else if (CFG.enemy === 'zombie') buildDesert();
+else buildCity();
+
+function buildDesert() {
+  while (trees.length < 260) {
+    const x = rnd(-W, W), z = rnd(-LEN - 30, 20), rock = Math.random() < 0.4;
+    if (okSpot(x, z, 0)) trees.push(rock ? { x, z, r: rnd(1, 2.5), rock } : { x, z, r: rnd(0.35, 0.55), h: rnd(2.5, 5) });
+  }
+  const cacti = trees.filter(t => !t.rock), rocks = trees.filter(t => t.rock);
+  deco(new THREE.CylinderGeometry(1, 1, 1, 8).translate(0, 0.5, 0), 0x4a8a3a, cacti.length * 3, i => {
+    const t = cacti[Math.floor(i / 3)], k = i % 3; // tronco + due braccia
+    if (!k) { o.position.set(t.x, 0, t.z); o.scale.set(t.r, t.h, t.r); }
+    else { o.position.set(t.x + (k === 1 ? 1 : -1) * t.r * 1.7, t.h * 0.35, t.z); o.scale.set(t.r * 0.6, t.h * 0.4, t.r * 0.6); }
+  });
+  deco(new THREE.DodecahedronGeometry(1, 0), 0x9a7a50, rocks.length, i => {
+    const t = rocks[i]; o.position.set(t.x, t.r * 0.3, t.z); o.scale.set(t.r, t.r * 0.7, t.r); o.rotation.set(rnd(0, 3), rnd(0, 3), 0);
+  });
+  deco(new THREE.SphereGeometry(1, 8, 4), 0xc9a868, isTouch ? 150 : 300, () => { // dune
+    o.position.set(rnd(-W, W), -0.3, rnd(-LEN - 30, 20)); const s = rnd(2, 5); o.scale.set(s * 1.6, s * 0.3, s);
+  });
+}
+
+function buildCity() {
+  for (let x = -54; x <= 54; x += 18) for (let z = 10; z > -LEN - 30; z -= 18) {
+    const bx = x + rnd(-2, 2), bz = z + rnd(-2, 2), r = rnd(4, 6.5);
+    if (Math.abs(bx) > 9 && okSpot(bx, bz, r)) trees.push({ x: bx, z: bz, r, h: rnd(8, 32) }); // strada centrale libera
+  }
+  // shortcut: i palazzi sono quadrati ma la collisione è un cerchio di raggio r, gli spigoli si attraversano un po'
+  const bm = deco(new THREE.BoxGeometry(1.6, 1, 1.6).translate(0, 0.5, 0), 0xffffff, trees.length, i => {
+    const t = trees[i]; o.position.set(t.x, 0, t.z); o.scale.set(t.r, t.h, t.r);
+  });
+  trees.forEach((t, i) => bm.setColorAt(i, col.setHSL(rnd(0, 1), 0.12, rnd(0.25, 0.5))));
+  const road = mesh(new THREE.PlaneGeometry(16, LEN + 100), M(0x2a2a30), 0, 0.02, -LEN / 2);
+  road.rotation.x = -Math.PI / 2; scene.add(road);
+  deco(new THREE.BoxGeometry(0.3, 0.05, 3), 0xddcc33, 60, i => o.position.set(0, 0.05, 15 - i * 8)); // strisce
+  deco(new THREE.BoxGeometry(2, 1.3, 4), 0x884433, 40, () => { // auto abbandonate (solo decoro)
+    o.position.set(rnd(-7, 7), 0.65, rnd(-LEN, 10)); o.rotation.y = rnd(0, 3);
+  });
+}
+
+function buildJungle() {
 while (trees.length < 650) {
   const x = rnd(-W, W), z = rnd(-LEN - 30, 20);
-  if (Math.hypot(x, z + LEN) < 24 || freeSpots.some(s => Math.hypot(s.x - x, s.z - z) < 4)) continue; // radura del boss
-  trees.push({ x, z, r: rnd(0.4, 0.9), h: rnd(5, 10) });
+  if (okSpot(x, z, 0)) trees.push({ x, z, r: rnd(0.4, 0.9), h: rnd(5, 10) });
 }
-const o = new THREE.Object3D();
 const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.7, 1, 1, 6).translate(0, 0.5, 0), M(0x5a3b1f), trees.length);
 const leaves = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), M(0xffffff), trees.length * 2);
 const leafCol = new THREE.Color();
@@ -190,6 +255,7 @@ for (let i = 0; i < BUSH; i++) {
   o.scale.set(s, s, s); o.rotation.set(0, rnd(0, 6), 0); o.updateMatrix(); bushes.setMatrixAt(i, o.matrix);
 }
 scene.add(trunks, leaves, bushes);
+}
 
 const exitBeam = mesh(new THREE.CylinderGeometry(3, 3, 60, 16, 1, true),
   new THREE.MeshBasicMaterial({ color: 0xff3333, transparent: true, opacity: 0.25, side: THREE.DoubleSide }), 0, 30, -LEN - 4);
@@ -198,7 +264,7 @@ scene.add(exitBeam);
 function collide(p, rad) {
   for (const t of trees) {
     const dx = p.x - t.x, dz = p.z - t.z;
-    if (Math.abs(dz) > 3 || Math.abs(dx) > 3) continue;
+    if (Math.abs(dz) > t.r + 3 || Math.abs(dx) > t.r + 3) continue;
     const d = Math.hypot(dx, dz), m = t.r + rad;
     if (d < m && d > 1e-4) { p.x = t.x + dx / d * m; p.z = t.z + dz / d * m; }
   }
@@ -267,6 +333,27 @@ function makeBeast() {
   return g;
 }
 
+// serpente volante: viola con anelli argento, corna e pinne luminose
+function makeSerpent() {
+  const g = new THREE.Group(), skin = M(0x8a4ae0), silver = M(0xe0e0f0), glow = B(0xd080ff);
+  const sph = new THREE.SphereGeometry(1, 12, 8), finG = new THREE.ConeGeometry(0.35, 1.4, 4), segs = [];
+  for (let i = 0; i < 12; i++) {
+    const s = mesh(sph, i % 3 ? skin : silver, 0, 2, -1 + i * 0.45); s.scale.setScalar(0.55 - i * 0.035);
+    if (i % 3 === 1) s.add(mesh(finG, glow, 0, 1.1, 0));
+    g.add(s); segs.push(s);
+  }
+  const head = mesh(new THREE.BoxGeometry(0.8, 0.6, 1.2), skin, 0, 2.3, -1.9);
+  const hornG = new THREE.ConeGeometry(0.08, 0.7, 5);
+  const hL = mesh(hornG, silver, -0.25, 2.8, -1.6), hR = mesh(hornG, silver, 0.25, 2.8, -1.6);
+  hL.rotation.x = hR.rotation.x = 0.8;
+  g.add(head, hL, hR,
+    mesh(new THREE.SphereGeometry(0.09, 6, 4), glow, -0.25, 2.45, -2.45),
+    mesh(new THREE.SphereGeometry(0.09, 6, 4), glow, 0.25, 2.45, -2.45));
+  g.scale.setScalar(1.4);
+  g.userData = { segs, head };
+  return g;
+}
+
 const alienBody = new THREE.SphereGeometry(0.7, 14, 10), alienEye = new THREE.SphereGeometry(0.13, 8, 6);
 const alienLeg = new THREE.ConeGeometry(0.15, 1, 6).rotateX(Math.PI), alienClaw = new THREE.ConeGeometry(0.12, 0.9, 6).rotateX(-Math.PI / 2);
 const eyeM = B(0xff2020);
@@ -287,13 +374,56 @@ function makeAlien(big) {
   g.traverse(c => { c.userData.root = g; });
   return g;
 }
+// corpo umanoide a blocchi per zombi e orchi; w = robustezza
+function makeHumanoid(skin, cloth, w) {
+  const g = new THREE.Group(), mat = M(skin), cm = M(cloth);
+  const legG = new THREE.BoxGeometry(0.3 * w, 0.9, 0.3 * w).translate(0, -0.45, 0);
+  const armG = new THREE.BoxGeometry(0.22 * w, 0.22 * w, 0.8).translate(0, 0, -0.4);
+  const legs = [mesh(legG, cm, -0.2 * w, 0.9, 0), mesh(legG, cm, 0.2 * w, 0.9, 0)];
+  g.add(...legs,
+    mesh(new THREE.BoxGeometry(0.75 * w, 0.9, 0.45 * w), cm, 0, 1.35, 0),
+    mesh(new THREE.BoxGeometry(0.45 * w, 0.45, 0.45), mat, 0, 2.05, 0),
+    mesh(armG, mat, -0.5 * w, 1.65, 0), mesh(armG, mat, 0.5 * w, 1.65, 0));
+  return { g, mat, legs };
+}
+const smallEye = new THREE.SphereGeometry(0.06, 6, 4);
+function finish(g, u) { g.userData = { cd: 0, flash: 0, t: rnd(0, 9), ...u }; g.traverse(c => { c.userData.root = g; }); return g; }
+
+function makeZombie(big) {
+  const { g, mat, legs } = makeHumanoid(0x7a9a6a, [0x3a4a7a, 0x5a4030, 0x6a6a6a][Math.floor(rnd(0, 3))], 1);
+  g.add(mesh(smallEye, B(0xffee33), -0.1, 2.1, -0.23), mesh(smallEye, B(0xffee33), 0.1, 2.1, -0.23));
+  g.scale.setScalar(big ? 1.7 : 1);
+  return finish(g, { hp: big ? 380 : 70, speed: big ? 3 : rnd(3.5, 5.5), dmg: big ? 25 : 12, rad: big ? 1.3 : 0.7, mat, big, legs });
+}
+
+function makeOrc(big) {
+  const { g, mat, legs } = makeHumanoid(0x4a8a3a, 0x5a3a20, 1.4);
+  const tusk = new THREE.ConeGeometry(0.05, 0.2, 5), club = mesh(new THREE.CylinderGeometry(0.12, 0.25, 1.4, 6), M(0x6a4a2a), 0.7, 1.9, -0.9);
+  club.rotation.x = -1.1;
+  g.add(club, mesh(smallEye, B(0xff3311), -0.12, 2.12, -0.23), mesh(smallEye, B(0xff3311), 0.12, 2.12, -0.23),
+    mesh(tusk, M(0xffffee), -0.12, 1.92, -0.25), mesh(tusk, M(0xffffee), 0.12, 1.92, -0.25));
+  g.scale.setScalar(big ? 1.8 : 1.15);
+  return finish(g, { hp: big ? 500 : 120, speed: big ? 3.2 : rnd(4, 5.5), dmg: big ? 30 : 18, rad: big ? 1.6 : 0.9, mat, big, legs });
+}
+
+// nemico del livello corrente, rinforzato dal moltiplicatore di difficoltà
+function makeEnemy(big) {
+  const e = CFG.enemy === 'alien' ? makeAlien(big) : CFG.enemy === 'zombie' ? makeZombie(big) : makeOrc(big);
+  const u = e.userData, m = CFG.mul;
+  u.hp *= m; u.dmg = Math.round(u.dmg * m); u.speed *= 1 + (m - 1) * 0.5;
+  return e;
+}
+
 function makeBoss() {
-  const e = makeAlien(true);
+  const e = makeEnemy(true), u = e.userData;
   e.scale.setScalar(5.5);
-  e.userData.mat.color.setHex(0xd01838);
-  e.userData.glow = 0x661010; // bagliore per vederla anche nella nebbia
-  for (const x of [-0.45, 0.45]) e.add(Object.assign(mesh(new THREE.ConeGeometry(0.12, 0.8, 6), M(0x222222), x, 2.7, -0.2), { userData: { root: e } }));
-  Object.assign(e.userData, { hp: 4000, max: 4000, speed: 3, dmg: 30, rad: 3.2, boss: true, shotCd: 3 });
+  u.mat.color.setHex({ alien: 0xd01838, zombie: 0x5a8a4a, orc: 0x2a7a2a }[CFG.enemy]);
+  u.glow = 0x661010; // bagliore per vederlo anche nella nebbia
+  const add = m => { m.userData.root = e; e.add(m); };
+  if (CFG.enemy === 'alien') for (const x of [-0.45, 0.45]) add(mesh(new THREE.ConeGeometry(0.12, 0.8, 6), M(0x222222), x, 2.7, -0.2));
+  else if (CFG.enemy === 'zombie') add(mesh(new THREE.CylinderGeometry(0.28, 0.24, 0.25, 6), M(0xffcc00, 0x443300), 0, 2.4, 0)); // corona
+  else for (const x of [-0.3, 0.3]) { const h = mesh(new THREE.ConeGeometry(0.08, 0.5, 6), M(0xdddddd), x, 2.45, 0); h.rotation.z = -x * 2; add(h); } // elmo con corna
+  Object.assign(u, { hp: CFG.bossHp, max: CFG.bossHp, speed: 3.5 * (1 + (CFG.mul - 1) * 0.3), dmg: Math.round(35 * CFG.mul), rad: 3.2, boss: true, shotCd: 3, summonCd: 6 });
   return e;
 }
 
@@ -304,16 +434,25 @@ const WEAPONS = {
   minigun: { name: 'Minigun', dmg: 20, rate: 0.035, spread: 0.03, pellets: 1, ammo: 400, color: 0xffff66 },
   rocket:  { name: 'Lanciarazzi', dmg: 220, rate: 0.9, spread: 0, pellets: 1, ammo: 12, splash: 7, color: 0xff5522 },
   laser:   { name: 'Cannone Laser', dmg: 160, rate: 0.35, spread: 0, pellets: 1, ammo: 40, pierce: true, color: 0x44ffff },
+  plasma:  { name: 'Fucile al Plasma', dmg: 60, rate: 0.07, spread: 0.01, pellets: 1, ammo: 250, splash: 3, color: 0xcc44ff },
+  railgun: { name: 'Railgun', dmg: 1000, rate: 0.8, spread: 0, pellets: 1, ammo: 15, pierce: true, color: 0xffffff },
+  nuke:    { name: 'Testata Nucleare', dmg: 1500, rate: 2, spread: 0, pellets: 1, ammo: 3, splash: 22, color: 0xffee00 },
 };
-const CRATE_WEAPONS = ['minigun', 'rocket', 'laser'], GROUND_WEAPONS = ['shotgun', 'shotgun', 'minigun'];
+const CRATE_WEAPONS = ['minigun', 'rocket', 'laser', 'plasma', 'railgun', 'nuke'], GROUND_WEAPONS = ['shotgun', 'shotgun', 'minigun'];
 const FORMS = {
   dragon: { name: 'DRAGO DI FUOCO', color: '#ffa030', orb: 0xff7a10, help: 'Tieni premuto spara per sputare fuoco' },
   beast:  { name: 'LUPO FOLGORE', color: '#66ffff', orb: 0x33ddff, help: 'Spara fulmini a catena' },
+  serpent: { name: 'SERPENTE DELLE TEMPESTE', color: '#d080ff', orb: 0xa040ff, help: 'Voli! Spara per lanciare tornado' },
 };
+const FORM_ORDER = ['dragon', 'beast', 'serpent'];
 
 // ---------- stato ----------
-const player = new THREE.Group(), man = makeMan(), dragon = makeDragon(), beast = makeBeast();
-player.add(man, dragon, beast); dragon.visible = beast.visible = false; scene.add(player);
+const player = new THREE.Group(), man = makeMan(), dragon = makeDragon(), beast = makeBeast(), serpent = makeSerpent();
+player.add(man, dragon, beast, serpent); dragon.visible = beast.visible = serpent.visible = false; scene.add(player);
+const tornG = new THREE.ConeGeometry(2.2, 7, 14, 4, true).rotateX(Math.PI).translate(0, 3.5, 0); // imbuto con la punta in basso
+const tornWire = new THREE.MeshBasicMaterial({ color: 0xe8e0ff, wireframe: true });
+const tornFill = new THREE.MeshBasicMaterial({ color: 0xb8a8e8, transparent: true, opacity: 0.35, side: THREE.DoubleSide });
+const tornadoes = [];
 const P = player.position;
 let yaw = 0, pitch = 0.05, vy = 0, hp = 100, kills = 0, opened = 0, form = 'man', formT = 0;
 let fireCd = 0, spawnT = 1, firing = false, state = 'menu', time = 0, msgT = 0, sndT = 0;
@@ -325,7 +464,7 @@ const ray = new THREE.Raycaster();
 
 function toast(t) { $('msg').textContent = t; msgT = 2.5; }
 function setForm(f) {
-  form = f; man.visible = f === 'man'; dragon.visible = f === 'dragon'; beast.visible = f === 'beast';
+  form = f; man.visible = f === 'man'; dragon.visible = f === 'dragon'; beast.visible = f === 'beast'; serpent.visible = f === 'serpent';
 }
 
 const crateG = new THREE.BoxGeometry(1.3, 1, 1.3), lidG = new THREE.BoxGeometry(1.4, 0.2, 1.4);
@@ -385,16 +524,17 @@ function damage(e, d) {
   u.hp -= d; u.flash = 0.08;
   if (u.hp > 0) return;
   scene.remove(e); enemies.splice(enemies.indexOf(e), 1); kills++;
-  burst(chest(e), 0x66ff33, u.boss ? 80 : u.big ? 30 : 14, u.boss ? 20 : u.big ? 8 : 5);
+  burst(chest(e), CFG.blood, u.boss ? 80 : u.big ? 30 : 14, u.boss ? 20 : u.big ? 8 : 5);
   if (u.boss) {
     bossDead = true; SFX.boom(); SFX.roar();
     exitBeam.material.color.setHex(0x66ff66); $('boss').style.display = 'none';
-    toast("REGINA ALIENA SCONFITTA! Corri all'uscita!");
+    toast(`${CFG.boss} SCONFITTO! Corri all'uscita!`);
   } else SFX.die();
   if (!u.boss && Math.random() < (u.big ? 0.6 : 0.12)) addItem('health', e.position);
 }
-function explode(p, r, d) {
-  burst(p, 0xff8822, 40, 12); SFX.boom();
+function explode(p, r, d, quiet) {
+  burst(p, r > 10 ? 0xffee44 : 0xff8822, Math.min(120, r * 6), r * 1.7);
+  if (!quiet) SFX.boom();
   for (const e of [...enemies]) if (e.position.distanceTo(p) < r * (e.userData.boss ? 2 : 1)) damage(e, d);
 }
 function hurt(d) {
@@ -428,7 +568,7 @@ function shoot() {
       let e = hits[0]?.object.userData.root;
       if (!e && isTouch && (e = assist(ray.ray))) endP = chest(e);
       else if (hits.length) endP = hits[0].point;
-      if (w.splash && (e || hits.length)) explode(endP, w.splash, w.dmg);
+      if (w.splash && (e || hits.length)) explode(endP, w.splash, w.dmg, cur === 'plasma');
       else if (e) { damage(e, w.dmg); burst(endP, 0x88ff44, 3, 3); }
     }
     line([muzzle, endP], w.color, w.pierce ? 0.15 : 0.05);
@@ -471,15 +611,39 @@ function zap(fwd) {
   for (const e of chain) { const to = chest(e); bolt(from, to); burst(to, 0x99ffff, 6, 4); from = to; damage(e, formDmg(e, 90)); }
 }
 
+// il tornado corre a terra nella direzione in cui guardi e travolge chi tocca
+function tornado() {
+  const f = V(-Math.sin(yaw), 0, -Math.cos(yaw)), g = new THREE.Group(), inner = mesh(tornG, tornFill);
+  inner.scale.setScalar(0.75); g.add(mesh(tornG, tornWire), inner);
+  g.position.set(P.x + f.x * 4, 0, P.z + f.z * 4);
+  scene.add(g); tornadoes.push({ o: g, vel: f.multiplyScalar(16), life: 3.5 });
+  SFX.wind();
+}
+function updateTornadoes(dt) {
+  for (const t of [...tornadoes]) {
+    const p = t.o.position;
+    p.addScaledVector(t.vel, dt); p.x += Math.sin(time * 6 + t.life * 3) * dt * 3; // ondeggia
+    t.o.rotation.y += dt * 12; t.o.scale.setScalar(1 + Math.sin(time * 9) * 0.08);
+    for (const e of [...enemies]) {
+      if (Math.hypot(e.position.x - p.x, e.position.z - p.z) < 3.2 + (e.userData.boss ? e.userData.rad : 0)) damage(e, formDmg(e, 300 * dt));
+    }
+    if (Math.random() < 0.5) particle(p.clone().add(V(rnd(-1.5, 1.5), rnd(0, 6), rnd(-1.5, 1.5))), V(0, 4, 0), 0xe0d8ff, 0.4, 0.1);
+    if ((t.life -= dt) <= 0) { scene.remove(t.o); tornadoes.splice(tornadoes.indexOf(t), 1); }
+  }
+}
+
+// distanza in pianta: così anche volando si aprono casse e si raccolgono oggetti
+const flat = o => Math.hypot(o.position.x - P.x, o.position.z - P.z);
+
 function tryOpen() {
-  const c = crates.find(c => c.position.distanceTo(P) < 2.8);
+  const c = crates.find(c => flat(c) < 2.8);
   if (!c || state !== 'play') return;
   scene.remove(c); crates.splice(crates.indexOf(c), 1); opened++; SFX.crate();
   burst(c.position.clone().setY(1), 0xd4a017, 20, 5);
   if (opened % 2 === 0) {
-    const f = opened % 4 === 2 ? 'dragon' : 'beast';
+    const f = FORM_ORDER[(opened / 2 - 1) % FORM_ORDER.length];
     addItem('power', c.position, f); toast(`Trasformazione ${FORMS[f].name} apparsa!`);
-  } else give(CRATE_WEAPONS[Math.floor(rnd(0, 3))]);
+  } else give(CRATE_WEAPONS[Math.floor(rnd(0, CRATE_WEAPONS.length))]);
 }
 function give(k) { ammo[k] = (ammo[k] || 0) + WEAPONS[k].ammo; cur = k; toast(WEAPONS[k].name + '!'); SFX.pick(); }
 function cycle() {
@@ -488,12 +652,15 @@ function cycle() {
 }
 
 function end(win) {
-  state = win ? 'win' : 'over'; firing = false;
+  const last = LV === LEVELS.length - 1;
+  state = !win ? 'over' : last ? 'win' : 'next'; firing = false;
   win ? SFX.win() : SFX.lose();
   document.exitPointerLock?.();
-  $('title').textContent = win ? 'HAI SUPERATO LA GIUNGLA!' : 'GAME OVER';
+  $('title').textContent = { over: 'GAME OVER', next: 'LIVELLO COMPLETATO!', win: 'HAI VINTO TUTTI I LIVELLI!' }[state];
   $('title').style.color = win ? '#7f7' : '#f55';
-  $('sub').innerHTML = `Alieni eliminati: <b>${kills}</b> · Casse aperte: <b>${opened}</b><br><br><b>${isTouch ? 'Tocca' : 'Clicca'} per ricominciare</b>`;
+  $('sub').innerHTML = `${CFG.foes} eliminati: <b>${kills}</b> · Casse aperte: <b>${opened}</b><br>`
+    + (state === 'next' ? `Prossimo livello: <b>${LEVELS[LV + 1].name}</b> (più difficile!)<br>` : '')
+    + `<br><b>${isTouch ? 'Tocca' : 'Clicca'} ${{ over: 'per riprovare', next: 'per continuare', win: 'per ricominciare dal primo livello' }[state]}</b>`;
   $('screen').style.display = 'flex';
 }
 
@@ -513,7 +680,8 @@ addEventListener('mousemove', e => {
   pitch = clamp(pitch - e.movementY * 0.0025, -0.6, 0.9);
 });
 $('screen').addEventListener('click', () => {
-  if (state === 'over' || state === 'win') return location.reload();
+  if (state === 'over') return location.reload();
+  if (state === 'next' || state === 'win') { location.search = '?livello=' + (state === 'next' ? LV + 2 : 1); return; }
   audio().resume();
   state = 'play'; $('screen').style.display = 'none';
   if (isTouch) {
@@ -582,13 +750,16 @@ function update(dt) {
   mv.addScaledVector(f, -joy.y).addScaledVector(r, joy.x);
   const mag = Math.min(1, mv.length()), moving = mag > 0.1;
   const run = keys.ShiftLeft || Math.hypot(joy.x, joy.y) > 0.95;
-  const speed = form === 'dragon' ? 13 : form === 'beast' ? 15 : run ? 9.5 : 6;
+  const speed = form === 'dragon' ? 13 : form === 'beast' ? 15 : form === 'serpent' ? 16 : run ? 9.5 : 6;
   if (moving) P.add(mv.normalize().multiplyScalar(speed * mag * dt));
-  if (keys.Space && P.y === 0) vy = form === 'man' ? 7.5 : 12;
-  vy -= (form === 'dragon' ? 18 : 25) * dt; P.y += vy * dt;
-  if (P.y <= 0) { P.y = 0; vy = 0; }
+  if (form === 'serpent') { P.y += ((keys.Space ? 14 : 7) - P.y) * Math.min(1, dt * 3); vy = 0; } // vola: salta = sali
+  else {
+    if (keys.Space && P.y === 0) vy = form === 'man' ? 7.5 : 12;
+    vy -= (form === 'dragon' ? 18 : 25) * dt; P.y += vy * dt;
+    if (P.y <= 0) { P.y = 0; vy = 0; }
+  }
   collide(P, form === 'man' ? 0.4 : 1.2);
-  if (boss && !bossDead && P.z < -LEN + 3) { P.z = -LEN + 3; if (msgT <= 0) toast("Sconfiggi la Regina Aliena per aprire l'uscita!"); }
+  if (boss && !bossDead && P.z < -LEN + 3) { P.z = -LEN + 3; if (msgT <= 0) toast(`Sconfiggi ${CFG.boss} per aprire l'uscita!`); }
   player.rotation.y = yaw;
   const sw = moving ? Math.sin(time * 12) * 0.6 : 0;
   man.userData.legL.rotation.x = sw; man.userData.legR.rotation.x = -sw;
@@ -596,28 +767,32 @@ function update(dt) {
   const flap = Math.sin(time * (moving || P.y > 0 ? 12 : 4)) * 0.45;
   dragon.userData.wR.rotation.z = flap; dragon.userData.wL.rotation.z = -flap;
   dragon.userData.flame.scale.setScalar(1 + Math.sin(time * 20) * 0.2);
+  serpent.userData.segs.forEach((s, i) => { s.position.y = 2 + Math.sin(time * 5 - i * 0.7) * 0.35; s.position.x = Math.sin(time * 3 - i * 0.5) * 0.3; });
 
   // attacchi
   fireCd -= dt;
   const aim = V(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
   if (firing && form === 'dragon') breathe(dt, aim);
   else if (firing && fireCd <= 0) {
-    if (form === 'beast') { zap(aim); fireCd = 0.3; } else { shoot(); fireCd = WEAPONS[cur].rate; }
+    if (form === 'beast') { zap(aim); fireCd = 0.3; }
+    else if (form === 'serpent') { tornado(); fireCd = 0.45; }
+    else { shoot(); fireCd = WEAPONS[cur].rate; }
   }
+  updateTornadoes(dt);
 
   // boss
   const prog = clamp(-P.z / LEN, 0, 1);
   if (!boss && P.z < -LEN + 35) { // all'ingresso della radura, così la si vede bene
     boss = makeBoss(); boss.position.set(0, 0, -LEN + 6); scene.add(boss); enemies.push(boss);
-    $('boss').style.display = 'block'; SFX.roar(); toast('ARRIVA LA REGINA ALIENA!');
+    $('boss').style.display = 'block'; SFX.roar(); toast(`⚠️ ARRIVA ${CFG.boss}! ⚠️`);
   }
   if (boss && !bossDead) $('bossbar').style.width = Math.max(0, boss.userData.hp / boss.userData.max * 100) + '%';
 
   // nemici
   spawnT -= dt;
-  if (spawnT <= 0 && enemies.length < 6 + prog * 14) {
+  if (spawnT <= 0 && enemies.length < 6 + prog * 14 + LV * 4) {
     spawnT = rnd(0.5, 1.4);
-    const e = makeAlien(Math.random() < 0.08 + prog * 0.2), a = rnd(-1.3, 1.3), d = rnd(30, 55);
+    const e = makeEnemy(Math.random() < 0.08 + prog * 0.2 + LV * 0.05), a = rnd(-1.3, 1.3), d = rnd(30, 55);
     e.position.set(clamp(P.x + Math.sin(a) * d, -W, W), 0, Math.max(P.z - Math.cos(a) * d, -LEN - 20));
     scene.add(e); enemies.push(e);
   }
@@ -629,29 +804,38 @@ function update(dt) {
     if (d > u.rad + (form === 'man' ? 0.5 : 1.2)) {
       e.position.x += dx / d * u.speed * dt; e.position.z += dz / d * u.speed * dt;
       if (!u.boss) collide(e.position, u.rad * 0.6);
-    } else if (u.cd <= 0 && P.y < 2) { u.cd = 1; hurt(u.dmg); }
+    } else if (u.cd <= 0 && P.y < (u.boss ? 10 : 2)) { u.cd = 1; hurt(u.dmg); }
     if (u.boss && (u.shotCd -= dt) <= 0) {
-      u.shotCd = 2.2; SFX.spit();
-      const from = e.position.clone().setY(8), dir0 = P.clone().setY(1).sub(from).normalize();
-      for (let k = -2; k <= 2; k++) {
-        const m = mesh(partG, B(0x99ff22), from.x, from.y, from.z); m.scale.setScalar(0.5); scene.add(m);
-        shots.push({ m, vel: dir0.clone().applyAxisAngle(V(0, 1, 0), k * 0.15).multiplyScalar(20), life: 4 });
+      const rage = u.hp < u.max / 2; // sotto metà vita spara più spesso e più colpi
+      u.shotCd = (rage ? 1.2 : 1.8) / Math.sqrt(CFG.mul); SFX.spit();
+      const from = e.position.clone().setY(9), dir0 = P.clone().setY(P.y + 1).sub(from).normalize();
+      for (let k = -3; k <= 3; k++) {
+        const m = mesh(partG, B(rage ? 0xff4422 : CFG.spit), from.x, from.y, from.z); m.scale.setScalar(0.5); scene.add(m);
+        shots.push({ m, vel: dir0.clone().applyAxisAngle(V(0, 1, 0), k * 0.13).multiplyScalar(rage ? 26 : 22), life: 4 });
+      }
+    }
+    if (u.boss && (u.summonCd -= dt) <= 0) { // evoca rinforzi
+      u.summonCd = 8;
+      for (let k = 0; k < 3 + LV; k++) {
+        const m = makeEnemy(k === 0); m.position.set(e.position.x + rnd(-8, 8), 0, e.position.z + rnd(2, 8));
+        scene.add(m); enemies.push(m);
       }
     }
     e.position.y = Math.abs(Math.sin(u.t * (u.boss ? 3 : 8))) * 0.15;
+    if (u.legs) { const s = Math.sin(u.t * 8) * 0.5; u.legs[0].rotation.x = s; u.legs[1].rotation.x = -s; }
     u.flash -= dt; u.mat.emissive.setHex(u.flash > 0 ? 0xaaaaaa : u.glow || 0);
   }
   for (const s of [...shots]) {
     s.m.position.addScaledVector(s.vel, dt);
-    const hit = s.m.position.distanceTo(P.clone().setY(1)) < (form === 'man' ? 1.3 : 2.2);
-    if (hit) hurt(12);
+    const hit = s.m.position.distanceTo(P.clone().setY(P.y + 1)) < (form === 'man' ? 1.3 : 2.2);
+    if (hit) hurt(15);
     if (hit || (s.life -= dt) <= 0 || s.m.position.y < 0) { scene.remove(s.m); shots.splice(shots.indexOf(s), 1); }
   }
 
   // oggetti
   for (const it of [...items]) {
     it.o.rotation.y += dt * 2; it.o.position.y = 1 + Math.sin(time * 3) * 0.2;
-    if (it.o.position.distanceTo(P.clone().setY(1)) > 2) continue;
+    if (flat(it.o) > 2) continue;
     scene.remove(it.o); items.splice(items.indexOf(it), 1);
     if (it.type === 'gun') give(it.data);
     else if (it.type === 'health') { hp = Math.min(100, hp + 25); toast('+25 salute'); SFX.pick(); }
@@ -671,11 +855,11 @@ function update(dt) {
   }
 
   // HUD
-  const near = crates.some(c => c.position.distanceTo(P) < 2.8);
+  const near = crates.some(c => flat(c) < 2.8);
   $('hint').textContent = near ? (isTouch ? 'Tocca APRI per aprire la cassa' : 'Premi E per aprire la cassa') : '';
   $('hpbar').style.width = Math.max(0, hp) + '%';
-  $('weapon').innerHTML = form === 'dragon' ? '🔥 Fuoco' : form === 'beast' ? '⚡ Fulmini' : `${WEAPONS[cur].name}<br>${cur === 'rifle' ? '∞' : ammo[cur]}`;
-  $('info').textContent = `Alieni: ${kills} · Casse: ${opened}`;
+  $('weapon').innerHTML = form === 'dragon' ? '🔥 Fuoco' : form === 'beast' ? '⚡ Fulmini' : form === 'serpent' ? '🌪️ Tornado' : `${WEAPONS[cur].name}<br>${cur === 'rifle' ? '∞' : ammo[cur]}`;
+  $('info').textContent = `Liv ${LV + 1} · ${CFG.foes}: ${kills} · Casse: ${opened}`;
   $('progbar').style.width = prog * 100 + '%';
   $('form').textContent = form === 'man' ? '' : `${FORMS[form].name} ${Math.ceil(formT)}s`;
   $('form').style.color = $('cross').style.borderColor = form === 'man' ? '#fff' : FORMS[form].color;
@@ -686,9 +870,15 @@ function update(dt) {
 function updateCamera() {
   const fwd = V(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
   const right = V(Math.cos(yaw), 0, -Math.sin(yaw));
-  const [h, dist, side] = form === 'dragon' ? [4, 8, 0] : form === 'beast' ? [3, 6, 0] : [2, 4.5, 0.9];
+  const [h, dist, side] = form === 'dragon' ? [4, 8, 0] : form === 'beast' ? [3, 6, 0] : form === 'serpent' ? [5, 12, 0] : [2, 4.5, 0.9];
   const target = P.clone().add(V(0, h, 0)).addScaledVector(right, side);
-  camera.position.copy(target).addScaledVector(fwd, -dist);
+  // avvicina la telecamera se finirebbe dentro un palazzo o un albero
+  const near = trees.filter(t => t.h && Math.hypot(t.x - P.x, t.z - P.z) < dist + t.r + 2);
+  for (let d = dist; d >= 1; d -= 0.5) {
+    camera.position.copy(target).addScaledVector(fwd, -d);
+    const c = camera.position;
+    if (!near.some(t => t.h > c.y && Math.hypot(c.x - t.x, c.z - t.z) < t.r * 1.2 + 0.3)) break;
+  }
   camera.position.y = Math.max(camera.position.y, 0.4);
   camera.lookAt(target.add(fwd));
 }
