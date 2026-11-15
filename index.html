@@ -805,10 +805,10 @@ function castMagic(k) {
   if (k === 'fuoco') { // palla di fuoco
     const dir = aimPoint(80).sub(hand).normalize(), ball = mesh(new THREE.SphereGeometry(0.5, 12, 8), B(0xff7a22), hand.x, hand.y, hand.z);
     SFX.fireball();
+    const vel = dir.clone().multiplyScalar(38);
     addFx(ball, 2.5, (dt, _, fb) => {
-      const p = ball.position; p.addScaledVector(dir, 38 * dt);
+      const p = ball.position, e = travel(p, vel, dt, 0.7);
       particle(p, V(rnd(-1, 1), rnd(0, 1), rnd(-1, 1)), [0xff4400, 0xffaa22][Math.floor(rnd(0, 2))], 0.35, 0.25, 1);
-      const e = enemies.find(e => Math.hypot(e.position.x - p.x, e.position.z - p.z) < e.userData.rad + 0.7 && p.y < e.position.y + 2.6 * e.scale.y);
       if (e || p.y < 0.2 || fb.life <= 0.02) { explode(p, 5, w.dmg); fb.life = 0; }
     });
   } else if (k === 'acqua') { // muro d'acqua che avanza
@@ -887,10 +887,10 @@ function mageCast() {
     const from = mage.userData.red.getWorldPosition(V()), dir = aimPoint(80).sub(from).normalize();
     const o = mesh(new THREE.SphereGeometry(0.6, 14, 10), B(0xff2a2a), from.x, from.y, from.z);
     SFX.fireball();
+    const vel = dir.clone().multiplyScalar(48);
     addFx(o, 1.8, (dt, _, fx) => {
-      const p = o.position; p.addScaledVector(dir, 48 * dt);
+      const p = o.position, hit = travel(p, vel, dt, 0.8);
       particle(p, V(0, 0, 0), 0xff6060, 0.25, 0.3);
-      const hit = enemies.some(e => Math.hypot(e.position.x - p.x, e.position.z - p.z) < e.userData.rad + 0.8 && p.y < e.position.y + 2.6 * e.scale.y);
       if (!hit && p.y > 0.2 && fx.life > 0.03) return;
       fx.life = 0; burst(p, 0xff2a2a, 40, 12); SFX.boom(); shake = 0.3;
       for (const e of [...enemies]) {
@@ -1063,11 +1063,22 @@ function launchBar(from) {
   g.position.copy(from); g.lookAt(from.clone().add(dir));
   scene.add(g); bars.push({ o: g, vel: dir.multiplyScalar(55), life: 2 });
 }
+// avanza un proiettile a passi di mezzo metro e si ferma sul primo nemico toccato:
+// così anche a pochi fotogrammi al secondo non "salta" i bersagli
+function travel(p, vel, dt, pad) {
+  const n = Math.max(1, Math.ceil(vel.length() * dt / 0.5));
+  for (let i = 0; i < n; i++) {
+    p.addScaledVector(vel, dt / n);
+    const e = enemies.find(e => Math.hypot(e.position.x - p.x, e.position.z - p.z) < e.userData.rad + pad
+      && p.y > e.position.y - 0.5 && p.y < e.position.y + 2.6 * e.scale.y);
+    if (e) return e;
+    if (p.y < 0.2) return null;
+  }
+  return null;
+}
 function updateBars(dt) {
   for (const b of [...bars]) {
-    const p = b.o.position; p.addScaledVector(b.vel, dt); b.o.rotateZ(dt * 15);
-    const e = enemies.find(e => Math.hypot(e.position.x - p.x, e.position.z - p.z) < e.userData.rad + 0.5
-      && p.y > e.position.y && p.y < e.position.y + 2.6 * e.scale.y);
+    const p = b.o.position, e = travel(p, b.vel, dt, 0.5); b.o.rotateZ(dt * 15);
     if (e) { explode(p, WEAPONS.choco.splash, WEAPONS.choco.dmg, true); burst(p, 0x6b3a1e, 12, 6); }
     if (e || (b.life -= dt) <= 0 || p.y < 0) { scene.remove(b.o); bars.splice(bars.indexOf(b), 1); }
   }
