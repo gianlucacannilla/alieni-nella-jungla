@@ -3,15 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Giungla Aliena</title>
+<title>Leonardo vs Mostri</title>
 <style>
   body{margin:0;overflow:hidden;background:#000;font-family:system-ui,sans-serif;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none}
-  #hud{position:fixed;inset:0;pointer-events:none;text-shadow:0 2px 4px #000}
+  #hud{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;text-shadow:0 2px 4px #000}
+  #dmgnum{position:absolute;left:calc(50% + 18px);top:calc(50% - 34px);font-weight:bold;font-size:20px;opacity:0;transition:opacity .4s}
   #cross{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-10px;border:2px solid #fff;border-radius:50%;opacity:.85}
-  #hp{position:absolute;left:20px;bottom:20px;width:240px;height:18px;background:#0008;border:2px solid #fff}
-  #hpbar{height:100%;width:100%;background:#e33;transition:width .1s}
-  #weapon{position:absolute;right:20px;bottom:20px;font-size:22px;text-align:right}
+  #hp{position:absolute;left:20px;bottom:20px;width:240px;background:#0008;border:2px solid #fff}
+  #shbar{height:8px;width:0;background:#3aa0ff;transition:width .1s}
+  #hpbar{height:14px;width:100%;background:#3c3;transition:width .1s}
+  #stbar{height:5px;width:100%;background:#ffd23a}
+  #stbar.tired{background:#c86a2a}
+  #use{position:absolute;left:50%;top:58%;transform:translateX(-50%);display:none;text-align:center;font-weight:bold}
+  #usebg{width:200px;height:8px;background:#0008;border:1px solid #fff;margin-top:4px}
+  #usebar{height:100%;width:0;background:#3aa0ff}
+  #weapon{position:absolute;right:20px;bottom:92px;font-size:22px;text-align:right}
   #info{position:absolute;left:20px;top:16px;font-size:18px}
+  #slots{position:absolute;right:20px;bottom:20px;display:flex;gap:6px}
+  .slot{position:relative;width:86px;height:62px;box-sizing:border-box;background:#0009;border:2px solid #fff5;border-radius:6px;font-size:13px;line-height:1.3;text-align:center;padding-top:3px}
+  .slot b{font-size:15px}
+  .slot.on{border:3px solid #fff;transform:translateY(-8px);box-shadow:0 0 10px #fff8}
+  .slot.empty{opacity:.35}
+  #slots.off{opacity:.4}
+  .touch #slots{left:20px;top:76px;right:auto;bottom:auto}
+  .touch .slot.on{transform:none}
+  .slot i{position:absolute;left:0;bottom:0;width:100%;background:#000b}
+  .slot.spec{border-style:dashed;border-color:#d080ff}
+  .touch .slot{width:52px;height:46px;font-size:11px;padding-top:1px}
+  .touch .slot b{font-size:10px}
   #prog{position:absolute;left:50%;top:16px;width:min(300px,40vw);transform:translateX(-50%);height:10px;background:#0008;border:1px solid #fff}
   #progbar{height:100%;width:0;background:#4f4}
   #boss{position:absolute;left:50%;top:34px;width:min(500px,70vw);transform:translateX(-50%);display:none;text-align:center;font-weight:bold;color:#f66}
@@ -20,20 +39,29 @@
   #form{position:absolute;left:50%;top:70px;transform:translateX(-50%);font-size:22px;font-weight:bold}
   #msg{position:absolute;left:50%;top:28%;transform:translateX(-50%);font-size:clamp(18px,4vw,30px);font-weight:bold;text-align:center;width:90vw}
   #hint{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);font-size:20px}
-  #hit{position:fixed;inset:0;background:radial-gradient(transparent 45%,#f00a);opacity:0;pointer-events:none;transition:opacity .25s}
-  #touch{position:fixed;inset:0;display:none;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  #hit{position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(transparent 45%,#f00a);opacity:0;pointer-events:none;transition:opacity .25s}
+  #touch{position:fixed;top:0;left:0;right:0;bottom:0;display:none;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   #touch .b{position:absolute;border-radius:50%;background:#fff3;border:2px solid #fff8;color:#fff;font:bold 13px system-ui;display:flex;align-items:center;justify-content:center}
   #bFire{right:24px;bottom:30px;width:96px;height:96px;background:#f445!important}
   #bJump{right:136px;bottom:20px;width:66px;height:66px}
   #bUse{right:140px;bottom:100px;width:58px;height:58px}
   #bSwap{right:42px;bottom:142px;width:58px;height:58px}
+  #bBag{right:140px;bottom:170px;width:58px;height:58px}
+  #bag{position:fixed;top:0;left:0;right:0;bottom:0;display:none;background:#000d;flex-direction:column;align-items:center;justify-content:center;gap:1.4vh;padding:12px;box-sizing:border-box;text-align:center}
+  #bag h2{margin:0;color:#7f7;font-size:clamp(18px,5vh,30px)}
+  #bag small{opacity:.7}
+  .bagrow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:560px}
+  #bag .slot{cursor:pointer;width:clamp(52px,10vh,86px);height:clamp(44px,8.5vh,62px)}
+  #bag .slot.sel{outline:3px solid #ffd23a;outline-offset:2px}
+  #baginfo{min-height:2.6em;max-width:560px}
+  #bag button{font:inherit;font-weight:bold;padding:8px 18px;border-radius:8px;border:2px solid #fff8;background:#fff2;color:#fff;cursor:pointer;margin:0 4px}
   #stick{position:absolute;width:120px;height:120px;margin:-62px;border-radius:50%;background:#fff2;border:2px solid #fff6;display:none;pointer-events:none}
   #knob{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:#fff9}
   .touch #hp{bottom:auto;top:44px;width:150px}
   .touch #weapon{bottom:auto;top:12px;font-size:16px}
   .touch #info{font-size:14px}
   .touch #hint{bottom:auto;top:62%}
-  #screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000d;text-align:center;cursor:pointer;touch-action:manipulation;padding:16px;box-sizing:border-box}
+  #screen{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000d;text-align:center;cursor:pointer;touch-action:manipulation;padding:16px;box-sizing:border-box}
   #screen h1{font-size:clamp(24px,min(7vw,9vh),52px);color:#7f7;margin:0 0 1vh}
   #screen p{font-size:clamp(12px,min(2.5vw,3.6vh),18px);line-height:1.6;max-width:680px;margin:0}
   #screen b{color:#ffa030}
@@ -42,13 +70,16 @@
 <body>
 <div id="hud">
   <div id="cross"></div>
+  <div id="dmgnum"></div>
   <div id="info"></div>
+  <div id="slots"></div>
   <div id="prog"><div id="progbar"></div></div>
   <div id="boss">REGINA ALIENA<div id="bossbg"><div id="bossbar"></div></div></div>
   <div id="form"></div>
   <div id="msg"></div>
   <div id="hint"></div>
-  <div id="hp"><div id="hpbar"></div></div>
+  <div id="use"><span id="usetxt"></span><div id="usebg"><div id="usebar"></div></div></div>
+  <div id="hp"><div id="shbar"></div><div id="hpbar"></div><div id="stbar"></div></div>
   <div id="weapon"></div>
 </div>
 <div id="hit"></div>
@@ -58,12 +89,28 @@
   <div class="b" id="bJump" data-b="jump">SALTA</div>
   <div class="b" id="bUse" data-b="use">APRI</div>
   <div class="b" id="bSwap" data-b="swap">ARMA</div>
+  <div class="b" id="bBag" data-b="bag">ZAINO</div>
+</div>
+<div id="bag">
+  <h2>🎒 ZAINO</h2>
+  <small>Tocca un oggetto, poi un'altra casella per spostarlo</small>
+  <div>Barra armi (1-5) + slot magico (6)</div><div class="bagrow" id="bagbar"></div>
+  <div>Zaino</div><div class="bagrow" id="bagpack"></div>
+  <div id="baginfo"></div>
+  <div><button id="bagdrop">Butta</button><button id="bagclose">Chiudi</button></div>
 </div>
 <div id="screen">
-  <h1 id="title">GIUNGLA ALIENA</h1>
+  <h1 id="title">LEONARDO VS MOSTRI</h1>
   <p id="sub"></p>
 </div>
 
+<script>
+  // se il gioco non parte (browser troppo vecchio, niente WebGL o rete assente) mostra un messaggio invece di restare fermo
+  setTimeout(function () {
+    if (window.gameReady) return;
+    document.getElementById('sub').innerHTML = 'Il gioco non riesce a partire su questo browser.<br>Controlla la connessione, poi aggiorna il browser o prova con Chrome, Safari, Firefox o Edge recenti.';
+  }, 15000);
+</script>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
@@ -79,20 +126,27 @@ const LEVELS = [
   { name: 'GIUNGLA ALIENA', sky: 0x2a4a2a, ground: 0x2f5a22, enemy: 'alien', foes: 'Alieni', boss: 'REGINA ALIENA', bossHp: 15000, blood: 0x66ff33, spit: 0x99ff22, mul: 1 },
   { name: 'DESERTO DEGLI ZOMBI', sky: 0xb89a6a, ground: 0xd2b47a, enemy: 'zombie', foes: 'Zombi', boss: 'RE DEGLI ZOMBI', bossHp: 22000, blood: 0x8a1010, spit: 0x7a9a30, mul: 1.4 },
   { name: 'CITTÀ DEGLI ORCHI', sky: 0x4a4a5a, ground: 0x505058, enemy: 'orc', foes: 'Orchi', boss: 'ORCO SUPREMO', bossHp: 30000, blood: 0x30a030, spit: 0x888888, mul: 1.8 },
+  // livello segreto: si sblocca uccidendo 100 orchi e l'Orco Supremo; gravità bassa
+  { name: 'SPAZIO PROFONDO', sky: 0x05040f, ground: 0x3a3450, enemy: 'sdragon', foes: 'Draghi', boss: 'IL SIGNORE OSCURO', bossHp: 40000, blood: 0xff44ff, spit: 0xaa33ff, mul: 2.2, grav: 0.45 },
 ];
 // shortcut: il livello passa via URL e ricarica la pagina, quindi armi e vita ripartono da zero a ogni livello
+const ORC_GOAL = 100, CITY = 2;
 const LV = clamp(parseInt(new URLSearchParams(location.search).get('livello')) || 1, 1, LEVELS.length) - 1;
 const CFG = LEVELS[LV];
-$('title').textContent = CFG.name;
+$('title').textContent = 'LEONARDO VS MOSTRI';
 $('boss').firstChild.textContent = CFG.boss;
 
 $('sub').innerHTML =
-  `🎯 <b>Livello ${LV + 1}/${LEVELS.length}</b>: attraversa il percorso, sconfiggi il boss <b>${CFG.boss}</b> e raggiungi l'<b>USCITA</b>.<br>`
+  `🎯 <b>Livello ${LV + 1}: ${CFG.name}</b> · Aiuta <b>Leonardo</b> ad attraversare il percorso, sconfiggi <b>${CFG.boss}</b> e raggiungi l'<b>USCITA</b>.<br>`
+  + (LV === CITY ? `🔓 Uccidi <b>${ORC_GOAL} orchi</b> e l'Orco Supremo per sbloccare il <b>livello segreto</b>!<br>` : '')
+  + (CFG.grav ? '🍫 Nello spazio hai il <b>Lancia-Cioccolato</b> · gravità bassa: salti altissimi!<br>' : '')
   + (isTouch
-    ? '🎮 Joystick a sinistra · trascina a destra per mirare · SPARA · SALTA · APRI casse · ARMA cambia arma<br>'
-    : '🎮 WASD muovi · Mouse mira · Click spara · Shift corri · Spazio salta · E apri casse · Q cambia arma<br>')
-  + '🔫 A terra: Fucile a pompa, Minigun · Nelle casse: Lanciarazzi, Laser, <b>Plasma</b>, <b>Railgun</b>, <b>Testata Nucleare</b><br>'
-  + '🐉 Ogni 2 casse una trasformazione per 20s: <b>DRAGO DI FUOCO</b> 🔥, <b>LUPO FOLGORE</b> ⚡, <b>SERPENTE DELLE TEMPESTE</b> 🌪️ (vola e lancia tornado!), uccidono i nemici in un colpo<br><br><b>'
+    ? '🎮 Joystick a sinistra · trascina a destra per mirare · SPARA · SALTA · APRI · ARMA o tocca gli slot · ZAINO<br>'
+    : '🎮 WASD muovi · Mouse mira · Click spara · Shift corri (stamina) · Spazio salta · E apri · 1-6, Q o rotella armi · Tab zaino<br>')
+  + '🔫 Armi per rarità: <span style="color:#9a9a9a">comune</span> · <span style="color:#3cb043">non comune</span> · <span style="color:#2f80ed">rara</span> · <span style="color:#a040e0">epica</span> · <span style="color:#f08020">leggendaria</span> · <span style="color:#ffd700">mitica</span> · 🎯 colpo in testa = danno doppio<br>'
+  + '🩹 Consumabili: Bende, Kit medico, Pozioni scudo (selezionali e premi spara) · 👀 i mostri ti inseguono solo se ti avvicini<br>'
+  + '✨ <b>Casse magiche viola</b>: poteri di Fuoco, Acqua, Terra, Fulmine, Onda Energetica (tieni premuto) e, rarissima, la 🌕 <b>Sfera Suprema</b> · slot 6<br>'
+  + '🐉 Ogni 2 casse una trasformazione per 20s: <b>DRAGO DI FUOCO</b> 🔥, <b>LUPO FOLGORE</b> ⚡, <b>SERPENTE DELLE TEMPESTE</b> 🌪️, <b>MAGO DELL\'INFINITO</b> 🔮 (Q cambia tecnica), uccidono in un colpo<br><br><b>'
   + (isTouch ? 'Tocca per giocare' : 'Clicca per giocare') + '</b>';
 
 // ---------- audio (sintetizzato, nessun file) ----------
@@ -134,6 +188,13 @@ const SFX = {
   nuke: () => { snd('sine', 60, 20, 2.5, 0.8); snd('noise', 800, 30, 2.5, 0.7); },
   boom: () => { snd('noise', 1200, 40, 0.8, 0.6); snd('sine', 90, 30, 0.6, 0.5); },
   fire: () => snd('noise', 900, 250, 0.18, 0.18),
+  choco: () => { snd('square', 520, 260, 0.08, 0.1); snd('noise', 2500, 600, 0.06, 0.12); },
+  head: () => snd('square', 1400, 1800, 0.08, 0.12),
+  fireball: () => { snd('noise', 600, 2500, 0.4, 0.3); snd('sawtooth', 200, 90, 0.4, 0.15); },
+  wave: () => { snd('noise', 400, 1600, 1.2, 0.4); snd('sine', 90, 140, 1.2, 0.2); },
+  quake: () => { snd('sine', 55, 25, 1.4, 0.8); snd('noise', 300, 40, 1.4, 0.6); },
+  charge: () => snd('sine', 300 + charge * 500, 320 + charge * 500, 0.22, 0.1),
+  blast: () => { snd('sawtooth', 140, 60, 1.2, 0.35); snd('noise', 3000, 200, 1.2, 0.4); },
   wind: () => { snd('noise', 300, 1800, 0.7, 0.35); snd('sine', 120, 260, 0.7, 0.1); },
   zap: () => { snd('sawtooth', 2500, 80, 0.2, 0.2); snd('noise', 6000, 1000, 0.15, 0.25); },
   die: () => snd('square', 500, 60, 0.25, 0.1),
@@ -176,11 +237,13 @@ ground.rotation.x = -Math.PI / 2; scene.add(ground);
 
 const crateSpots = [], gunSpots = [];
 for (let i = 0; i < 24; i++) crateSpots.push(V(rnd(-35, 35), 0, -12 - i * 15 + rnd(-5, 5)));
+const magicSpots = []; for (let i = 0; i < 7; i++) magicSpots.push(V(rnd(-40, 40), 0, -30 - i * 48 + rnd(-8, 8)));
 for (let i = 0; i < 12; i++) gunSpots.push(V(rnd(-20, 20), 0, -25 - i * 28 + rnd(-8, 8)));
-const freeSpots = [...crateSpots, ...gunSpots, V(0, 0, 0)];
+const freeSpots = [...crateSpots, ...magicSpots, ...gunSpots, V(0, 0, 0)];
 
 // ostacoli del livello, tutti con collisione a cerchio {x, z, r}
 const trees = [], o = new THREE.Object3D(), col = new THREE.Color();
+let skyDome = null;
 // libero dalla radura del boss, da casse e armi
 const okSpot = (x, z, pad) => Math.hypot(x, z + LEN) > 24 + pad && !freeSpots.some(s => Math.hypot(s.x - x, s.z - z) < 4 + pad);
 const deco = (geo, color, n, place) => {
@@ -190,7 +253,41 @@ const deco = (geo, color, n, place) => {
 };
 if (CFG.enemy === 'alien') buildJungle();
 else if (CFG.enemy === 'zombie') buildDesert();
-else buildCity();
+else if (CFG.enemy === 'orc') buildCity();
+else buildSpace();
+// griglia per le collisioni: ogni cella da 8 m conosce gli ostacoli abbastanza vicini da toccarla
+const CELL = 8, grid = new Map();
+for (const t of trees) {
+  const reach = Math.ceil((t.r + 3) / CELL), cx = Math.floor(t.x / CELL), cz = Math.floor(t.z / CELL);
+  for (let i = -reach; i <= reach; i++) for (let j = -reach; j <= reach; j++) {
+    const k = (cx + i) + ',' + (cz + j);
+    if (!grid.has(k)) grid.set(k, []);
+    grid.get(k).push(t);
+  }
+}
+
+function buildSpace() {
+  while (trees.length < 220) {
+    const x = rnd(-W, W), z = rnd(-LEN - 30, 20), rock = Math.random() < 0.5;
+    if (okSpot(x, z, 0)) trees.push(rock ? { x, z, r: rnd(1, 2.8), rock } : { x, z, r: rnd(0.5, 1), h: rnd(2, 6) });
+  }
+  const crys = trees.filter(t => !t.rock), rocks = trees.filter(t => t.rock);
+  deco(new THREE.ConeGeometry(1, 1, 5).translate(0, 0.5, 0), 0x66ccff, crys.length, i => {
+    const t = crys[i]; o.position.set(t.x, 0, t.z); o.scale.set(t.r, t.h, t.r); o.rotation.set(rnd(-0.2, 0.2), rnd(0, 3), rnd(-0.2, 0.2));
+  }).material.emissive.setHex(0x113355); // cristalli che brillano
+  deco(new THREE.DodecahedronGeometry(1, 0), 0x6a6478, rocks.length, i => {
+    const t = rocks[i]; o.position.set(t.x, t.r * 0.3, t.z); o.scale.set(t.r, t.r * 0.6, t.r); o.rotation.set(rnd(0, 3), rnd(0, 3), 0);
+  });
+  deco(new THREE.TorusGeometry(1, 0.25, 4, 16).rotateX(Math.PI / 2), 0x2a2438, 120, () => { // crateri
+    o.position.set(rnd(-W, W), 0, rnd(-LEN - 30, 20)); o.scale.setScalar(rnd(2, 6));
+  });
+  const pts = []; // stelle
+  for (let i = 0; i < 1500; i++) pts.push(V(rnd(-1, 1), rnd(0, 1), rnd(-1, 1)).normalize().multiplyScalar(250));
+  const stars = new THREE.Points(new THREE.BufferGeometry().setFromPoints(pts), new THREE.PointsMaterial({ color: 0xffffff, size: 1.2, fog: false }));
+  const planet = mesh(new THREE.SphereGeometry(30, 32, 16), new THREE.MeshBasicMaterial({ color: 0x3a7ad0, fog: false }), -120, 90, -180);
+  skyDome = new THREE.Group(); skyDome.add(stars, planet); scene.add(skyDome); // segue il giocatore
+  scene.fog.near = 30; scene.fog.far = 140;
+}
 
 function buildDesert() {
   while (trees.length < 260) {
@@ -262,7 +359,7 @@ const exitBeam = mesh(new THREE.CylinderGeometry(3, 3, 60, 16, 1, true),
 scene.add(exitBeam);
 
 function collide(p, rad) {
-  for (const t of trees) {
+  for (const t of grid.get(Math.floor(p.x / CELL) + ',' + Math.floor(p.z / CELL)) || []) {
     const dx = p.x - t.x, dz = p.z - t.z;
     if (Math.abs(dz) > t.r + 3 || Math.abs(dx) > t.r + 3) continue;
     const d = Math.hypot(dx, dz), m = t.r + rad;
@@ -280,9 +377,14 @@ function makeMan() {
   g.add(legL, legR, gun,
     mesh(new THREE.BoxGeometry(0.7, 0.8, 0.4), camo, 0, 1.2, 0),
     mesh(new THREE.SphereGeometry(0.22, 12, 10), skin, 0, 1.82, 0),
-    mesh(new THREE.CylinderGeometry(0.23, 0.23, 0.08, 12), M(0xaa2222), 0, 1.92, 0),
     mesh(new THREE.BoxGeometry(0.2, 0.2, 0.6), camo, 0.3, 1.35, -0.3),
     mesh(new THREE.BoxGeometry(0.2, 0.2, 0.6), camo, -0.25, 1.35, -0.3));
+  const curl = new THREE.SphereGeometry(0.09, 6, 5), blond = M(0xf2d24a);
+  for (let i = 0; i < 16; i++) { // riccioli biondi
+    const a = i / 16 * Math.PI * 2, top = i % 2 ? 0.05 : -0.03;
+    g.add(mesh(curl, blond, Math.cos(a) * 0.19, 1.92 + top, Math.sin(a) * 0.19 + 0.02));
+  }
+  for (const [x, z] of [[0, 0], [0.1, 0.08], [-0.1, 0.08], [0.08, -0.1], [-0.08, -0.1]]) g.add(mesh(curl, blond, x, 2.04, z));
   g.userData = { legL, legR, gun };
   return g;
 }
@@ -308,6 +410,25 @@ function makeDragon() {
     mesh(legG, orange, -0.5, 0.5, 0.1), mesh(legG, orange, 0.5, 0.5, 0.1));
   g.scale.setScalar(1.3);
   g.userData = { wL, wR, head, flame };
+  return g;
+}
+
+// mago originale: tunica viola scura, cappuccio, occhi luminosi, corona di cristalli e una sfera rossa e una blu nelle mani
+function makeMage() {
+  const g = new THREE.Group(), robe = M(0x1e1236), trim = M(0xb070ff, 0x3a1060);
+  const crown = new THREE.Group();
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; crown.add(mesh(new THREE.OctahedronGeometry(0.09), B(i % 2 ? 0xffd700 : 0xc080ff), Math.cos(a) * 0.35, 0, Math.sin(a) * 0.35)); }
+  crown.position.y = 2.55;
+  const red = mesh(new THREE.SphereGeometry(0.16, 12, 8), B(0xff2a2a), 0.5, 1.3, -0.35), blue = mesh(new THREE.SphereGeometry(0.16, 12, 8), B(0x2a7aff), -0.5, 1.3, -0.35);
+  g.add(crown, red, blue,
+    mesh(new THREE.ConeGeometry(0.6, 1.8, 10), robe, 0, 0.9, 0), // tunica lunga
+    mesh(new THREE.CylinderGeometry(0.61, 0.61, 0.1, 10), trim, 0, 0.08, 0),
+    mesh(new THREE.BoxGeometry(0.9, 0.18, 0.18), robe, 0, 1.45, -0.1), // braccia
+    mesh(new THREE.SphereGeometry(0.22, 12, 10), M(0xe8c8a8), 0, 1.95, 0),
+    mesh(new THREE.ConeGeometry(0.3, 0.6, 10), robe, 0, 2.2, 0.05), // cappuccio
+    mesh(new THREE.SphereGeometry(0.04, 6, 4), B(0xd0a0ff), -0.08, 1.98, -0.21), mesh(new THREE.SphereGeometry(0.04, 6, 4), B(0xd0a0ff), 0.08, 1.98, -0.21));
+  g.scale.setScalar(1.15);
+  g.userData = { crown, red, blue };
   return g;
 }
 
@@ -371,7 +492,7 @@ function makeAlien(big) {
     hp: big ? 350 : 60, speed: big ? 3.5 : rnd(4.5, 6.5), dmg: big ? 25 : 10,
     rad: big ? 1.4 : 0.8, cd: 0, mat, flash: 0, t: rnd(0, 9), big,
   };
-  g.traverse(c => { c.userData.root = g; });
+  g.traverse(c => { c.userData.root = g; if (c.isMesh && c.position.y >= 2) c.userData.head = true; }); // testa e occhi
   return g;
 }
 // corpo umanoide a blocchi per zombi e orchi; w = robustezza
@@ -387,7 +508,12 @@ function makeHumanoid(skin, cloth, w) {
   return { g, mat, legs };
 }
 const smallEye = new THREE.SphereGeometry(0.06, 6, 4);
-function finish(g, u) { g.userData = { cd: 0, flash: 0, t: rnd(0, 9), ...u }; g.traverse(c => { c.userData.root = g; }); return g; }
+// headZ: per i draghi la testa è davanti (z), per gli umanoidi è in alto (y >= 2)
+function finish(g, u) {
+  g.userData = { cd: 0, flash: 0, t: rnd(0, 9), wT: 0, ...u };
+  g.traverse(c => { c.userData.root = g; if (c.isMesh && (u.headZ !== undefined ? c.position.z <= u.headZ : c.position.y >= 2)) c.userData.head = true; });
+  return g;
+}
 
 function makeZombie(big) {
   const { g, mat, legs } = makeHumanoid(0x7a9a6a, [0x3a4a7a, 0x5a4030, 0x6a6a6a][Math.floor(rnd(0, 3))], 1);
@@ -406,49 +532,100 @@ function makeOrc(big) {
   return finish(g, { hp: big ? 500 : 120, speed: big ? 3.2 : rnd(4, 5.5), dmg: big ? 30 : 18, rad: big ? 1.6 : 0.9, mat, big, legs });
 }
 
+const wingShape = new THREE.Shape(); wingShape.moveTo(0, 0); wingShape.lineTo(1.6, 0.9); wingShape.lineTo(1.4, -0.4); wingShape.lineTo(0, -0.5);
+const sdWingG = new THREE.ShapeGeometry(wingShape).rotateX(-Math.PI / 2);
+const sdWingM = new THREE.MeshLambertMaterial({ color: 0x2a0a40, side: THREE.DoubleSide });
+function makeSpaceDragon(big) {
+  const g = new THREE.Group(), mat = M(Math.random() < 0.5 ? 0x7a2ad0 : 0x1a9a8a);
+  const body = mesh(alienBody, mat, 0, 1.4, 0); body.scale.set(0.8, 0.7, 1.6);
+  const head = mesh(new THREE.BoxGeometry(0.5, 0.4, 0.8), mat, 0, 1.7, -1.3);
+  const tail = mesh(new THREE.ConeGeometry(0.25, 1.6, 6), mat, 0, 1.4, 1.6); tail.rotation.x = Math.PI / 2;
+  const wR = mesh(sdWingG, sdWingM, 0.3, 1.6, 0), wL = mesh(sdWingG, sdWingM, -0.3, 1.6, 0); wL.scale.x = -1;
+  const horn = new THREE.ConeGeometry(0.06, 0.35, 5);
+  g.add(body, head, tail, wR, wL, mesh(horn, M(0xdddddd), -0.15, 2, -1.1), mesh(horn, M(0xdddddd), 0.15, 2, -1.1),
+    mesh(smallEye, B(0xff2222), -0.15, 1.75, -1.71), mesh(smallEye, B(0xff2222), 0.15, 1.75, -1.71));
+  g.scale.setScalar(big ? 1.8 : 1.1);
+  return finish(g, { hp: big ? 600 : 150, speed: big ? 4 : rnd(5, 7), dmg: big ? 30 : 18, rad: big ? 1.6 : 1, mat, big, fly: true, wings: [wR, wL], headZ: -1 });
+}
+
+// boss dello spazio: un umano gigante con capelli neri lisci e mantello viola
+function makeDarkLord() {
+  const { g, mat, legs } = makeHumanoid(0xe0b090, 0x1a1a2a, 1), hair = M(0x0a0a0a);
+  const cape = mesh(new THREE.BoxGeometry(0.8, 1.3, 0.05), M(0x5a1a7a), 0, 1.25, 0.27);
+  g.add(cape,
+    mesh(new THREE.BoxGeometry(0.5, 0.12, 0.5), hair, 0, 2.32, 0), // sopra
+    mesh(new THREE.BoxGeometry(0.5, 0.75, 0.08), hair, 0, 1.98, 0.24), // lunghi dietro
+    mesh(new THREE.BoxGeometry(0.08, 0.6, 0.45), hair, -0.25, 2.02, 0.02), mesh(new THREE.BoxGeometry(0.08, 0.6, 0.45), hair, 0.25, 2.02, 0.02),
+    mesh(new THREE.BoxGeometry(0.46, 0.08, 0.04), hair, 0, 2.24, -0.23), // frangia
+    mesh(smallEye, B(0xaa33ff), -0.1, 2.1, -0.23), mesh(smallEye, B(0xaa33ff), 0.1, 2.1, -0.23));
+  return finish(g, { hp: 1, speed: 3, dmg: 1, rad: 1, mat, big: true, legs });
+}
+
 // nemico del livello corrente, rinforzato dal moltiplicatore di difficoltà
 function makeEnemy(big) {
-  const e = CFG.enemy === 'alien' ? makeAlien(big) : CFG.enemy === 'zombie' ? makeZombie(big) : makeOrc(big);
+  const e = { alien: makeAlien, zombie: makeZombie, orc: makeOrc, sdragon: makeSpaceDragon }[CFG.enemy](big);
   const u = e.userData, m = CFG.mul;
   u.hp *= m; u.dmg = Math.round(u.dmg * m); u.speed *= 1 + (m - 1) * 0.5;
   return e;
 }
 
 function makeBoss() {
-  const e = makeEnemy(true), u = e.userData;
+  const e = CFG.enemy === 'sdragon' ? makeDarkLord() : makeEnemy(true), u = e.userData;
   e.scale.setScalar(5.5);
-  u.mat.color.setHex({ alien: 0xd01838, zombie: 0x5a8a4a, orc: 0x2a7a2a }[CFG.enemy]);
-  u.glow = 0x661010; // bagliore per vederlo anche nella nebbia
+  const bc = { alien: 0xd01838, zombie: 0x5a8a4a, orc: 0x2a7a2a }[CFG.enemy];
+  if (bc) u.mat.color.setHex(bc);
+  u.glow = CFG.enemy === 'sdragon' ? 0x220033 : 0x661010; // bagliore per vederlo anche nella nebbia
   const add = m => { m.userData.root = e; e.add(m); };
   if (CFG.enemy === 'alien') for (const x of [-0.45, 0.45]) add(mesh(new THREE.ConeGeometry(0.12, 0.8, 6), M(0x222222), x, 2.7, -0.2));
   else if (CFG.enemy === 'zombie') add(mesh(new THREE.CylinderGeometry(0.28, 0.24, 0.25, 6), M(0xffcc00, 0x443300), 0, 2.4, 0)); // corona
-  else for (const x of [-0.3, 0.3]) { const h = mesh(new THREE.ConeGeometry(0.08, 0.5, 6), M(0xdddddd), x, 2.45, 0); h.rotation.z = -x * 2; add(h); } // elmo con corna
+  else if (CFG.enemy === 'orc') for (const x of [-0.3, 0.3]) { const h =mesh(new THREE.ConeGeometry(0.08, 0.5, 6), M(0xdddddd), x, 2.45, 0); h.rotation.z = -x * 2; add(h); } // elmo con corna
   Object.assign(u, { hp: CFG.bossHp, max: CFG.bossHp, speed: 3.5 * (1 + (CFG.mul - 1) * 0.3), dmg: Math.round(35 * CFG.mul), rad: 3.2, boss: true, shotCd: 3, summonCd: 6 });
   return e;
 }
 
 // ---------- armi ----------
 const WEAPONS = {
-  rifle:   { name: "Fucile d'assalto", dmg: 22, rate: 0.1, spread: 0.015, pellets: 1, color: 0xffee88 },
-  shotgun: { name: 'Fucile a pompa', dmg: 18, rate: 0.7, spread: 0.08, pellets: 9, ammo: 30, color: 0xffaa55 },
-  minigun: { name: 'Minigun', dmg: 20, rate: 0.035, spread: 0.03, pellets: 1, ammo: 400, color: 0xffff66 },
-  rocket:  { name: 'Lanciarazzi', dmg: 220, rate: 0.9, spread: 0, pellets: 1, ammo: 12, splash: 7, color: 0xff5522 },
-  laser:   { name: 'Cannone Laser', dmg: 160, rate: 0.35, spread: 0, pellets: 1, ammo: 40, pierce: true, color: 0x44ffff },
-  plasma:  { name: 'Fucile al Plasma', dmg: 60, rate: 0.07, spread: 0.01, pellets: 1, ammo: 250, splash: 3, color: 0xcc44ff },
-  railgun: { name: 'Railgun', dmg: 1000, rate: 0.8, spread: 0, pellets: 1, ammo: 15, pierce: true, color: 0xffffff },
-  nuke:    { name: 'Testata Nucleare', dmg: 1500, rate: 2, spread: 0, pellets: 1, ammo: 3, splash: 22, color: 0xffee00 },
+  rifle:   { name: "Fucile d'assalto", short: 'FUCILE', rar: 0, dmg: 22, rate: 0.1, spread: 0.015, pellets: 1, color: 0xffee88 },
+  shotgun: { name: 'Fucile a pompa', short: 'POMPA', rar: 1, dmg: 18, rate: 0.7, spread: 0.08, pellets: 9, ammo: 30, color: 0xffaa55 },
+  minigun: { name: 'Minigun', short: 'MINIGUN', rar: 2, dmg: 20, rate: 0.035, spread: 0.03, pellets: 1, ammo: 400, color: 0xffff66 },
+  rocket:  { name: 'Lanciarazzi', short: 'RAZZI', rar: 2, dmg: 220, rate: 0.9, spread: 0, pellets: 1, ammo: 12, splash: 7, color: 0xff5522 },
+  laser:   { name: 'Cannone Laser', short: 'LASER', rar: 3, dmg: 160, rate: 0.35, spread: 0, pellets: 1, ammo: 40, pierce: true, color: 0x44ffff },
+  plasma:  { name: 'Fucile al Plasma', short: 'PLASMA', rar: 3, dmg: 60, rate: 0.07, spread: 0.01, pellets: 1, ammo: 250, splash: 3, color: 0xcc44ff },
+  railgun: { name: 'Railgun', short: 'RAILGUN', rar: 4, dmg: 1000, rate: 0.8, spread: 0, pellets: 1, ammo: 15, pierce: true, color: 0xffffff },
+  nuke:    { name: 'Testata Nucleare', short: 'NUKE', rar: 4, dmg: 1500, rate: 2, spread: 0, pellets: 1, ammo: 3, splash: 22, color: 0xffee00 },
+  choco:   { name: 'Lancia-Cioccolato', short: 'CHOCO', rar: 4, dmg: 400, rate: 0.08, splash: 3.5, proj: true, color: 0x6b3a1e }, // solo nello spazio
+  // consumabili: stanno negli slot come le armi; si usano premendo spara e tenendoli in mano per qualche secondo
+  bende:   { name: 'Bende', short: 'BENDE', rar: 0, use: 1.5, heal: 15, upTo: 75, ammo: 5, max: 15 },
+  medkit:  { name: 'Kit medico', short: 'KIT MED', rar: 1, use: 4, heal: 100, upTo: 100, ammo: 1, max: 3 },
+  scudo1:  { name: 'Pozione scudo piccola', short: 'SCUDO S', rar: 1, use: 1, shield: 25, upTo: 50, ammo: 2, max: 6 },
+  scudo2:  { name: 'Pozione scudo grande', short: 'SCUDO L', rar: 2, use: 3, shield: 50, upTo: 100, ammo: 1, max: 3 },
+  // poteri magici elementali: solo nello slot speciale 6, si ricaricano col tempo (cd = secondi)
+  fuoco:   { name: 'Magia del Fuoco', short: 'FUOCO', rar: 4, magic: 'fuoco', icon: '🔥', cd: 1, dmg: 500, color: 0xff5a1a, desc: 'Palla di fuoco che esplode' },
+  acqua:   { name: "Magia dell'Acqua", short: 'ACQUA', rar: 4, magic: 'acqua', icon: '💧', cd: 3, dmg: 450, color: 0x3a9aff, desc: 'Onda di marea che travolge e spinge via' },
+  terra:   { name: 'Magia della Terra', short: 'TERRA', rar: 4, magic: 'terra', icon: '🪨', cd: 5, dmg: 700, color: 0x9a7a4a, desc: 'Terremoto: danno intorno a te, respinge e blocca i nemici' },
+  fulmine: { name: 'Magia del Fulmine', short: 'FULMINE', rar: 4, magic: 'fulmine', icon: '⚡', cd: 2, dmg: 600, color: 0xfff066, desc: 'Fulmine dal cielo sul mirino, salta sui vicini' },
+  sfera:   { name: 'Sfera Suprema', short: 'SFERA', rar: 5, magic: 'sfera', icon: '🌕', cd: 3, dmg: 6000, radius: 30, single: true, color: 0x9fe8ff, desc: 'MITICA e rarissima, un solo uso: una sfera di energia gigante che distrugge tutti i mostri entro 30 m (al boss toglie 6000)' },
+  energia: { name: 'Onda Energetica', short: 'ENERGIA', rar: 4, magic: 'energia', icon: '🌀', cd: 1.5, dmg: 3000, color: 0x66ccff, desc: 'Tieni premuto per caricare, rilascia: raggio enorme che attraversa tutti' },
 };
+const RARITY = ['#9a9a9a', '#3cb043', '#2f80ed', '#a040e0', '#f08020', '#ffd700']; // comune, non comune, rara, epica, leggendaria, mitica
+const rarHex = k => parseInt(RARITY[WEAPONS[k].rar].slice(1), 16);
+const CONSUMABLES = ['bende', 'bende', 'scudo1', 'scudo1', 'medkit', 'scudo2'];
+const MAGIC_KEYS = ['fuoco', 'acqua', 'terra', 'fulmine', 'energia'];
+const AGGRO = 22, LOSE = 45; // metri: entro AGGRO i mostri ti vedono, oltre LOSE ti perdono
 const CRATE_WEAPONS = ['minigun', 'rocket', 'laser', 'plasma', 'railgun', 'nuke'], GROUND_WEAPONS = ['shotgun', 'shotgun', 'minigun'];
 const FORMS = {
   dragon: { name: 'DRAGO DI FUOCO', color: '#ffa030', orb: 0xff7a10, help: 'Tieni premuto spara per sputare fuoco' },
   beast:  { name: 'LUPO FOLGORE', color: '#66ffff', orb: 0x33ddff, help: 'Spara fulmini a catena' },
   serpent: { name: 'SERPENTE DELLE TEMPESTE', color: '#d080ff', orb: 0xa040ff, help: 'Voli! Spara per lanciare tornado' },
+  mage:    { name: "MAGO DELL'INFINITO", color: '#b070ff', orb: 0x8a3aff, help: 'Q/ARMA cambia tecnica: Rosso, Blu, Viola, Dominio' },
 };
-const FORM_ORDER = ['dragon', 'beast', 'serpent'];
+const FORM_ORDER = ['dragon', 'beast', 'serpent', 'mage'];
+const TECHS = ['Colpo Rosso', 'Vortice Blu', 'Sfera Viola', 'Dominio Stellare'];
+let tech = 0, domainUsed = false, domainT = 0, domainSky = null;
 
 // ---------- stato ----------
-const player = new THREE.Group(), man = makeMan(), dragon = makeDragon(), beast = makeBeast(), serpent = makeSerpent();
-player.add(man, dragon, beast, serpent); dragon.visible = beast.visible = serpent.visible = false; scene.add(player);
+const player = new THREE.Group(), man = makeMan(), dragon = makeDragon(), beast = makeBeast(), serpent = makeSerpent(), mage = makeMage();
+player.add(man, dragon, beast, serpent, mage); dragon.visible = beast.visible = serpent.visible = mage.visible = false; scene.add(player);
 const tornG = new THREE.ConeGeometry(2.2, 7, 14, 4, true).rotateX(Math.PI).translate(0, 3.5, 0); // imbuto con la punta in basso
 const tornWire = new THREE.MeshBasicMaterial({ color: 0xe8e0ff, wireframe: true });
 const tornFill = new THREE.MeshBasicMaterial({ color: 0xb8a8e8, transparent: true, opacity: 0.35, side: THREE.DoubleSide });
@@ -456,48 +633,67 @@ const tornadoes = [];
 const P = player.position;
 let yaw = 0, pitch = 0.05, vy = 0, hp = 100, kills = 0, opened = 0, form = 'man', formT = 0;
 let fireCd = 0, spawnT = 1, firing = false, state = 'menu', time = 0, msgT = 0, sndT = 0;
-let boss = null, bossDead = false;
+let boss = null, bossDead = false, shield = 0, useK = null, useT = 0; // useK = consumabile in uso
+let stamina = 100, stamRest = 0, tired = false; // stamina per la corsa: tired = esaurita, si corre di nuovo da 30
 const ammo = { rifle: Infinity }; let cur = 'rifle';
+// 0-4 barra armi, 5 slot magico, 6-15 zaino
+const HOT = 5, MAGIC_SLOT = 5, BAG0 = 6;
+const slots = ['rifle', ...Array(15).fill(null)];
+let magicCd = 0, charge = 0, shake = 0;
+if (CFG.enemy === 'sdragon') { ammo.choco = Infinity; slots[1] = cur = 'choco'; } // arma dello spazio
 const enemies = [], items = [], crates = [], lines = [], parts = [], shots = [];
 const keys = {}, joy = { x: 0, y: 0 };
 const ray = new THREE.Raycaster();
 
 function toast(t) { $('msg').textContent = t; msgT = 2.5; }
 function setForm(f) {
-  form = f; man.visible = f === 'man'; dragon.visible = f === 'dragon'; beast.visible = f === 'beast'; serpent.visible = f === 'serpent';
+  form = f; man.visible = f === 'man'; dragon.visible = f === 'dragon'; beast.visible = f === 'beast'; serpent.visible = f === 'serpent'; mage.visible = f === 'mage';
+  if (f === 'mage') { tech = 0; domainUsed = false; } // il Dominio si usa una volta per trasformazione
 }
 
 const crateG = new THREE.BoxGeometry(1.3, 1, 1.3), lidG = new THREE.BoxGeometry(1.4, 0.2, 1.4);
+for (const s of magicSpots) { // casse magiche viola, con un cristallo sopra
+  const c = new THREE.Group();
+  c.add(mesh(crateG, M(0x4a1a6a, 0x220a33), 0, 0.5, 0), mesh(lidG, M(0xd080ff, 0x6a2a9a), 0, 1.05, 0), mesh(new THREE.OctahedronGeometry(0.35), B(0xf0c0ff), 0, 1.6, 0));
+  c.position.copy(s); c.userData.magic = true; scene.add(c); crates.push(c);
+}
 for (const s of crateSpots) {
   const c = new THREE.Group();
   c.add(mesh(crateG, M(0x8b5a2b), 0, 0.5, 0), mesh(lidG, M(0xd4a017, 0x332200), 0, 1.05, 0));
   c.position.copy(s); c.rotation.y = rnd(0, 3); scene.add(c); crates.push(c);
 }
 
-function addItem(type, pos, data) {
+function addItem(type, pos, data, n) {
   const g = new THREE.Group();
   if (type === 'gun') {
     const col = WEAPONS[data].color;
     g.add(mesh(new THREE.BoxGeometry(0.25, 0.3, 1.3), M(0x333333, col & 0x333333)),
-      mesh(new THREE.TorusGeometry(0.8, 0.06, 6, 20).rotateX(Math.PI / 2), B(col), 0, -0.6, 0));
+      mesh(new THREE.TorusGeometry(0.8, 0.06, 6, 20).rotateX(Math.PI / 2), B(rarHex(data)), 0, -0.6, 0)); // anello del colore di rarità
+  } else if (type === 'magic') {
+    g.add(mesh(new THREE.OctahedronGeometry(0.5), B(WEAPONS[data].color)), mesh(new THREE.TorusGeometry(0.8, 0.06, 6, 20).rotateX(Math.PI / 2), B(0xf0a020), 0, -0.6, 0));
   } else if (type === 'power') {
     g.add(mesh(new THREE.IcosahedronGeometry(0.6, 1), B(FORMS[data].orb)),
       mesh(new THREE.TorusGeometry(0.9, 0.08, 6, 24), B(0xffffff)));
-  } else {
-    g.add(mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), M(0xffffff, 0x444444)),
-      mesh(new THREE.BoxGeometry(0.62, 0.15, 0.4), M(0xdd0000, 0x550000)),
-      mesh(new THREE.BoxGeometry(0.62, 0.4, 0.15), M(0xdd0000, 0x550000)));
+  } else { // consumabile
+    if (data.startsWith('scudo')) { const sc = data === 'scudo2' ? 1.4 : 1; // pozione blu
+      g.add(mesh(new THREE.CylinderGeometry(0.22 * sc, 0.25 * sc, 0.5 * sc, 10), M(0x3aa0ff, 0x1a4a88)), mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.2, 8), M(0xdddddd), 0, 0.33 * sc, 0));
+    } else if (data === 'medkit') g.add(mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), M(0xffffff, 0x444444)),
+      mesh(new THREE.BoxGeometry(0.62, 0.15, 0.4), M(0xdd0000, 0x550000)), mesh(new THREE.BoxGeometry(0.62, 0.4, 0.15), M(0xdd0000, 0x550000)));
+    else g.add(mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.45, 10).rotateZ(Math.PI / 2), M(0xf4e0c8, 0x332211))); // bende arrotolate
+    g.add(mesh(new THREE.TorusGeometry(0.6, 0.05, 6, 20).rotateX(Math.PI / 2), B(rarHex(data)), 0, -0.6, 0));
   }
   g.position.set(pos.x, 1, pos.z);
-  scene.add(g); items.push({ o: g, type, data });
+  scene.add(g); items.push({ o: g, type, data, n });
 }
 gunSpots.forEach(s => addItem('gun', s, GROUND_WEAPONS[Math.floor(rnd(0, GROUND_WEAPONS.length))]));
 
 // ---------- effetti ----------
 const partG = new THREE.SphereGeometry(1, 6, 4);
+const partPool = [], MAX_PARTS = isTouch ? 220 : 450; // shortcut: oltre il tetto le particelle in più si scartano
 function particle(pos, vel, color, life, size, grow = 0) {
-  const m = mesh(partG, new THREE.MeshBasicMaterial({ color, transparent: true }), pos.x, pos.y, pos.z);
-  m.scale.setScalar(size); scene.add(m);
+  if (parts.length >= MAX_PARTS) return;
+  const m = partPool.pop() || new THREE.Mesh(partG, new THREE.MeshBasicMaterial({ transparent: true })); // riusa le particelle finite
+  m.material.color.setHex(color); m.material.opacity = 1; m.position.copy(pos); m.scale.setScalar(size); scene.add(m);
   parts.push({ m, vel, life, max: life, size, grow });
 }
 function burst(pos, color, n, speed) {
@@ -521,7 +717,7 @@ function bolt(a, b) {
 const chest = e => e.position.clone().setY(e.position.y + 1.4 * e.scale.y);
 function damage(e, d) {
   const u = e.userData; if (u.hp <= 0) return;
-  u.hp -= d; u.flash = 0.08;
+  u.hp -= d; u.flash = 0.08; u.aggro = true; // se lo colpisci sa dove sei
   if (u.hp > 0) return;
   scene.remove(e); enemies.splice(enemies.indexOf(e), 1); kills++;
   burst(chest(e), CFG.blood, u.boss ? 80 : u.big ? 30 : 14, u.boss ? 20 : u.big ? 8 : 5);
@@ -530,7 +726,7 @@ function damage(e, d) {
     exitBeam.material.color.setHex(0x66ff66); $('boss').style.display = 'none';
     toast(`${CFG.boss} SCONFITTO! Corri all'uscita!`);
   } else SFX.die();
-  if (!u.boss && Math.random() < (u.big ? 0.6 : 0.12)) addItem('health', e.position);
+  if (!u.boss && Math.random() < (u.big ? 0.6 : 0.12)) addItem('cons', e.position, u.big ? (Math.random() < 0.5 ? 'medkit' : 'scudo2') : (Math.random() < 0.5 ? 'bende' : 'scudo1'));
 }
 function explode(p, r, d, quiet) {
   burst(p, r > 10 ? 0xffee44 : 0xff8822, Math.min(120, r * 6), r * 1.7);
@@ -538,7 +734,8 @@ function explode(p, r, d, quiet) {
   for (const e of [...enemies]) if (e.position.distanceTo(p) < r * (e.userData.boss ? 2 : 1)) damage(e, d);
 }
 function hurt(d) {
-  hp -= form !== 'man' ? d * 0.3 : d; SFX.hurt();
+  if (form !== 'man') d *= 0.3;
+  const s = Math.min(shield, d); shield -= s; hp -= d - s; SFX.hurt(); // lo scudo assorbe per primo
   $('hit').style.opacity = 1; setTimeout(() => $('hit').style.opacity = 0, 120);
   if (hp <= 0) end(false);
 }
@@ -558,23 +755,258 @@ function assist(r) {
 function shoot() {
   const w = WEAPONS[cur];
   const muzzle = man.userData.gun.localToWorld(V(0, 0, -0.55));
+  if (w.proj) { launchBar(muzzle); SFX.choco(); return; } // munizioni infinite
   for (let i = 0; i < w.pellets; i++) {
     ray.setFromCamera(new THREE.Vector2(rnd(-w.spread, w.spread), rnd(-w.spread, w.spread)), camera);
     const hits = ray.intersectObjects([ground, ...enemies], true);
     let endP = ray.ray.at(90, V());
     if (w.pierce) {
-      new Set(hits.map(h => h.object.userData.root).filter(Boolean)).forEach(e => damage(e, w.dmg));
+      const seen = new Set();
+      for (const h of hits) { const e = h.object.userData.root; if (!e || seen.has(e)) continue; seen.add(e); hitEnemy(e, w.dmg, h.object.userData.head); }
     } else {
-      let e = hits[0]?.object.userData.root;
+      let e = hits[0]?.object.userData.root; const head = hits[0]?.object.userData.head;
       if (!e && isTouch && (e = assist(ray.ray))) endP = chest(e);
       else if (hits.length) endP = hits[0].point;
       if (w.splash && (e || hits.length)) explode(endP, w.splash, w.dmg, cur === 'plasma');
-      else if (e) { damage(e, w.dmg); burst(endP, 0x88ff44, 3, 3); }
+      else if (e) { hitEnemy(e, w.dmg, head); burst(endP, 0x88ff44, 3, 3); }
     }
     line([muzzle, endP], w.color, w.pierce ? 0.15 : 0.05);
   }
   SFX[cur]();
-  if (cur !== 'rifle' && --ammo[cur] <= 0) { delete ammo[cur]; cur = 'rifle'; toast('Munizioni finite!'); }
+  spend();
+}
+function spend() {
+  if (ammo[cur] !== Infinity && --ammo[cur] <= 0) { delete ammo[cur]; slots[slots.indexOf(cur)] = null; cur = 'rifle'; toast('Munizioni finite!'); }
+}
+// ---------- poteri magici ----------
+const fx = []; // effetti temporanei: { o, life, max, tick(dt, k, f) }
+function addFx(o, life, tick) { scene.add(o); fx.push({ o, life, max: life, tick }); }
+function updateFx(dt) {
+  for (const f of [...fx]) {
+    f.life -= dt; f.tick?.(dt, 1 - f.life / f.max, f);
+    if (f.life <= 0) { // gli effetti usano geometrie e materiali propri: liberali
+      scene.remove(f.o); fx.splice(fx.indexOf(f), 1);
+      f.o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+    }
+  }
+}
+// punto sotto il mirino (terreno o nemico), ignorando ciò che sta tra telecamera e Leonardo
+function aimPoint(len) {
+  ray.setFromCamera(new THREE.Vector2(0, 0), camera);
+  const minD = camera.position.distanceTo(P);
+  const hit = ray.intersectObjects([ground, ...enemies], true).find(h => h.distance > minD);
+  return hit ? hit.point : ray.ray.at(len, V());
+}
+const fadeMat = (color, opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, side: THREE.DoubleSide });
+function castMagic(k) {
+  const w = WEAPONS[k], f = V(-Math.sin(yaw), 0, -Math.cos(yaw)), hand = man.userData.gun.localToWorld(V(0, 0, -0.6));
+  magicCd = w.cd;
+  if (w.single) { slots[slots.indexOf(k)] = null; delete ammo[k]; cur = 'rifle'; } // si usa una volta sola
+  if (k === 'fuoco') { // palla di fuoco
+    const dir = aimPoint(80).sub(hand).normalize(), ball = mesh(new THREE.SphereGeometry(0.5, 12, 8), B(0xff7a22), hand.x, hand.y, hand.z);
+    SFX.fireball();
+    addFx(ball, 2.5, (dt, _, fb) => {
+      const p = ball.position; p.addScaledVector(dir, 38 * dt);
+      particle(p, V(rnd(-1, 1), rnd(0, 1), rnd(-1, 1)), [0xff4400, 0xffaa22][Math.floor(rnd(0, 2))], 0.35, 0.25, 1);
+      const e = enemies.find(e => Math.hypot(e.position.x - p.x, e.position.z - p.z) < e.userData.rad + 0.7 && p.y < e.position.y + 2.6 * e.scale.y);
+      if (e || p.y < 0.2 || fb.life <= 0.02) { explode(p, 5, w.dmg); fb.life = 0; }
+    });
+  } else if (k === 'acqua') { // muro d'acqua che avanza
+    const wall = mesh(new THREE.BoxGeometry(12, 3.5, 1.5), fadeMat(0x3a9aff, 0.6), P.x + f.x * 3, 1.75, P.z + f.z * 3);
+    wall.rotation.y = yaw; const hit = new Set(); SFX.wave();
+    addFx(wall, 2.2, (dt, k) => {
+      wall.position.addScaledVector(f, 22 * dt); wall.material.opacity = 0.6 * (1 - k * 0.6);
+      const r = V(-f.z, 0, f.x);
+      for (const e of [...enemies]) {
+        const rel = e.position.clone().sub(wall.position);
+        if (Math.abs(rel.dot(f)) > 1.8 || Math.abs(rel.dot(r)) > 6.5) continue;
+        if (!hit.has(e)) { hit.add(e); damage(e, w.dmg); }
+        if (!e.userData.boss) e.position.addScaledVector(f, 22 * dt); // trascinati dall'onda
+      }
+      if (Math.random() < 0.6) particle(wall.position.clone().add(V(rnd(-5, 5), 3.5, 0)), V(0, 2, 0), 0xe0f4ff, 0.4, 0.2);
+    });
+  } else if (k === 'terra') { // terremoto intorno a Leonardo
+    const ring = mesh(new THREE.TorusGeometry(1, 0.3, 6, 32).rotateX(Math.PI / 2), fadeMat(0x9a7a4a, 0.8), P.x, 0.3, P.z);
+    addFx(ring, 0.7, (dt, k) => { ring.scale.setScalar(1 + k * 13); ring.material.opacity = 0.8 * (1 - k); });
+    for (let i = 0; i < 14; i++) { // spuntoni di roccia
+      const a = i / 14 * Math.PI * 2, r = rnd(4, 10), sp = mesh(new THREE.ConeGeometry(0.6, 2.5, 5), M(0x7a6a5a), P.x + Math.cos(a) * r, -1.2, P.z + Math.sin(a) * r);
+      addFx(sp, 1.6, (dt, k) => { sp.position.y = k < 0.2 ? -1.2 + k * 10 : k > 0.75 ? 0.8 - (k - 0.75) * 8 : 0.8; });
+    }
+    for (const e of [...enemies]) {
+      const dx = e.position.x - P.x, dz = e.position.z - P.z, d = Math.hypot(dx, dz) || 1;
+      if (d > 13 + (e.userData.boss ? e.userData.rad : 0)) continue;
+      e.userData.rooted = e.userData.boss ? 1 : 3;
+      if (!e.userData.boss) { e.position.x += dx / d * 6; e.position.z += dz / d * 6; }
+      damage(e, w.dmg);
+    }
+    burst(P.clone().setY(0.5), 0x9a7a4a, 50, 10); shake = 0.6; SFX.quake();
+  } else if (k === 'sfera') { // sfera gigante: cresce sopra Leonardo, poi cade sul punto mirato
+    let t = aimPoint(80); t.y = 0;
+    if (Math.hypot(t.x - P.x, t.z - P.z) > 40) t = P.clone().add(V(-Math.sin(yaw) * 35, 0, -Math.cos(yaw) * 35)).setY(0); // mira all'orizzonte: cade a 35 m
+    const g = new THREE.Group(), core = mesh(new THREE.SphereGeometry(1, 24, 16), fadeMat(0xbff0ff, 0.9)), glow = mesh(new THREE.SphereGeometry(1.3, 24, 16), fadeMat(0x5ab8ff, 0.3));
+    g.add(core, glow); SFX.charge(); toast('🌕 Raccogli l\'energia…');
+    addFx(g, 2.6, (dt, k, f) => {
+      if (k < 0.6) { // carica: si gonfia e risucchia energia
+        g.position.copy(P).add(V(0, 10 + k * 8, 0)); g.scale.setScalar(0.5 + k / 0.6 * 7);
+        for (let i = 0; i < 3; i++) { const a = V(rnd(-1, 1), rnd(-0.6, 1), rnd(-1, 1)).normalize().multiplyScalar(25), from = g.position.clone().add(a);
+          particle(from, a.multiplyScalar(-1.6), 0xcff4ff, 0.6, 0.15); }
+        if ((sndT -= dt) <= 0) { SFX.charge(); sndT = 0.25; }
+      } else { // lancio
+        f.from = f.from || g.position.clone();
+        g.position.lerpVectors(f.from, t, (k - 0.6) / 0.4);
+      }
+      glow.scale.setScalar(1 + Math.sin(time * 20) * 0.06);
+      if (f.life <= 0.03 && !f.done) { f.done = true; supernova(t, w); }
+    });
+  } else if (k === 'fulmine') { // fulmine dal cielo + catena
+    const t = aimPoint(60); t.y = Math.max(0, t.y);
+    for (let i = 0; i < 3; i++) bolt(t.clone().add(V(rnd(-3, 3), 40, rnd(-3, 3))), t);
+    burst(t, 0xfff066, 30, 8); SFX.zap(); SFX.boom(); shake = 0.25;
+    const struck = enemies.filter(e => e.position.distanceTo(V(t.x, e.position.y, t.z)) < 5 + (e.userData.boss ? e.userData.rad : 0));
+    let from = t;
+    for (const e of enemies.filter(e => !struck.includes(e) && Math.hypot(e.position.x - t.x, e.position.z - t.z) < 14).slice(0, 3)) {
+      const to = chest(e); bolt(from, to); from = to; damage(e, w.dmg / 2);
+    }
+    struck.forEach(e => damage(e, w.dmg));
+  }
+}
+function supernova(t, w) { // esplosione della Sfera Suprema
+  const ring = mesh(new THREE.TorusGeometry(1, 0.6, 8, 48).rotateX(Math.PI / 2), fadeMat(0xbff0ff, 0.9), t.x, 0.5, t.z);
+  addFx(ring, 1.2, (dt, k) => { ring.scale.setScalar(1 + k * w.radius); ring.material.opacity = 0.9 * (1 - k); });
+  const dome = mesh(new THREE.SphereGeometry(1, 32, 16), fadeMat(0xffffff, 0.8), t.x, 0, t.z);
+  addFx(dome, 1.4, (dt, k) => { dome.scale.setScalar(2 + k * w.radius); dome.material.opacity = 0.8 * (1 - k); });
+  for (const e of [...enemies]) {
+    if (Math.hypot(e.position.x - t.x, e.position.z - t.z) < w.radius + (e.userData.boss ? e.userData.rad : 0)) damage(e, e.userData.boss ? w.dmg : 99999);
+  }
+  burst(t.clone().setY(2), 0xffffff, 120, 25); SFX.nuke(); SFX.blast(); shake = 1.2;
+}
+// ---------- tecniche del Mago dell'Infinito ----------
+function mageCast() {
+  const f = V(-Math.sin(yaw), 0, -Math.cos(yaw));
+  if (tech === 0) { // Colpo Rosso: sfera veloce che esplode e respinge
+    const from = mage.userData.red.getWorldPosition(V()), dir = aimPoint(80).sub(from).normalize();
+    const o = mesh(new THREE.SphereGeometry(0.6, 14, 10), B(0xff2a2a), from.x, from.y, from.z);
+    SFX.fireball();
+    addFx(o, 1.8, (dt, _, fx) => {
+      const p = o.position; p.addScaledVector(dir, 48 * dt);
+      particle(p, V(0, 0, 0), 0xff6060, 0.25, 0.3);
+      const hit = enemies.some(e => Math.hypot(e.position.x - p.x, e.position.z - p.z) < e.userData.rad + 0.8 && p.y < e.position.y + 2.6 * e.scale.y);
+      if (!hit && p.y > 0.2 && fx.life > 0.03) return;
+      fx.life = 0; burst(p, 0xff2a2a, 40, 12); SFX.boom(); shake = 0.3;
+      for (const e of [...enemies]) {
+        const dx = e.position.x - p.x, dz = e.position.z - p.z, d = Math.hypot(dx, dz) || 1;
+        if (d > 7 + (e.userData.boss ? e.userData.rad : 0)) continue;
+        if (!e.userData.boss) { e.position.x += dx / d * 8; e.position.z += dz / d * 8; }
+        damage(e, formDmg(e, 800));
+      }
+    });
+  } else if (tech === 1) { // Vortice Blu: risucchia i nemici nel centro e li distrugge
+    let t = aimPoint(60); if (Math.hypot(t.x - P.x, t.z - P.z) > 35) t = P.clone().addScaledVector(f, 25); t.y = 1.5;
+    const o = mesh(new THREE.SphereGeometry(1, 16, 12), fadeMat(0x2a7aff, 0.8), t.x, t.y, t.z);
+    SFX.wave();
+    addFx(o, 1.8, (dt, k) => {
+      o.scale.setScalar(1 + Math.sin(time * 30) * 0.15 + k);
+      for (let i = 0; i < 3; i++) { const a = V(rnd(-1, 1), rnd(-0.3, 1), rnd(-1, 1)).normalize().multiplyScalar(10); particle(t.clone().add(a), a.multiplyScalar(-2.5), 0x7ab0ff, 0.4, 0.12); }
+      for (const e of [...enemies]) {
+        const dx = t.x - e.position.x, dz = t.z - e.position.z, d = Math.hypot(dx, dz);
+        if (d > 14) continue;
+        if (!e.userData.boss && d > 0.5) { e.position.x += dx / d * 20 * dt; e.position.z += dz / d * 20 * dt; }
+        if (d < 3 + (e.userData.boss ? e.userData.rad : 0)) damage(e, formDmg(e, 900 * dt));
+      }
+    });
+  } else if (tech === 2) { // Sfera Viola: enorme, cancella tutto sul percorso
+    const o = mesh(new THREE.SphereGeometry(3, 24, 16), fadeMat(0x9a3aff, 0.85), P.x + f.x * 4, 2.5, P.z + f.z * 4), hit = new Set();
+    SFX.blast(); shake = 0.4;
+    addFx(o, 2.2, (dt, k) => {
+      o.position.addScaledVector(f, 40 * dt); o.rotation.y += dt * 8;
+      for (let i = 0; i < 4; i++) particle(o.position.clone().add(V(rnd(-3, 3), rnd(-3, 3), rnd(-3, 3))), V(0, 0, 0), i % 2 ? 0xff3a6a : 0x3a6aff, 0.4, 0.2);
+      for (const e of [...enemies]) {
+        if (hit.has(e) || Math.hypot(e.position.x - o.position.x, e.position.z - o.position.z) > 4 + (e.userData.boss ? e.userData.rad : 0)) continue;
+        hit.add(e); damage(e, formDmg(e, 3000));
+      }
+    });
+  } else { // Dominio Stellare
+    if (domainUsed) return toast('Dominio Stellare già usato in questa trasformazione');
+    domainUsed = true; startDomain();
+  }
+}
+// Dominio Stellare: per 3 secondi tutto diventa spazio, i nemici restano immobili, poi muoiono tutti
+const savedLook = {};
+function startDomain() {
+  if (!domainSky) {
+    const pts = [];
+    for (let i = 0; i < 2500; i++) pts.push(V(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize().multiplyScalar(rnd(40, 120)));
+    domainSky = new THREE.Group();
+    domainSky.add(new THREE.Points(new THREE.BufferGeometry().setFromPoints(pts), new THREE.PointsMaterial({ color: 0xffffff, size: 0.6, fog: false })),
+      mesh(new THREE.SphereGeometry(130, 32, 16), new THREE.MeshBasicMaterial({ color: 0x140628, side: THREE.BackSide, fog: false })));
+    scene.add(domainSky);
+  }
+  Object.assign(savedLook, { bg: scene.background.getHex(), fog: scene.fog.color.getHex(), ground: ground.material.color.getHex() });
+  scene.background.setHex(0x05020f); scene.fog.color.setHex(0x05020f); ground.material.color.setHex(0x1a1030);
+  domainSky.visible = true; domainT = 3;
+  enemies.forEach(e => { e.userData.stun = 3.2; });
+  toast('🌌 DOMINIO STELLARE'); SFX.transform(); SFX.roar(); shake = 0.4;
+}
+function updateDomain(dt) {
+  if (domainT <= 0) return;
+  domainSky.position.copy(P); domainSky.rotation.y += dt * 0.3;
+  enemies.forEach(e => { e.userData.stun = Math.max(e.userData.stun || 0, 0.2); }); // anche chi arriva dopo resta fermo
+  if ((domainT -= dt) > 0) return;
+  for (const e of [...enemies]) if (e.position.distanceTo(P) < 120) { burst(chest(e), 0xb070ff, 10, 6); damage(e, e.userData.boss ? 5000 : 99999); }
+  scene.background.setHex(savedLook.bg); scene.fog.color.setHex(savedLook.fog); ground.material.color.setHex(savedLook.ground);
+  domainSky.visible = false; shake = 1; SFX.nuke();
+}
+
+// Onda Energetica: tieni premuto per caricare (fino a 2 s), rilascia per sparare il raggio
+const chargeBall = new THREE.Group(), chargeGlow = mesh(new THREE.SphereGeometry(1.6, 16, 12), fadeMat(0x4ab8ff, 0.3));
+chargeBall.add(mesh(new THREE.SphereGeometry(1, 16, 12), fadeMat(0xdff6ff, 0.95)), chargeGlow); chargeBall.visible = false; scene.add(chargeBall);
+function updateCharge(dt) {
+  const on = form === 'man' && WEAPONS[cur].magic === 'energia' && magicCd <= 0;
+  if (!on) { charge = 0; chargeBall.visible = false; return; }
+  if (firing) {
+    charge = Math.min(2, charge + dt);
+    chargeBall.visible = true; chargeBall.position.copy(man.userData.gun.localToWorld(V(0, 0, -0.8)));
+    chargeBall.scale.setScalar(0.2 + charge * 0.5 + Math.sin(time * 40) * 0.04); chargeGlow.scale.setScalar(1 + Math.sin(time * 25) * 0.15);
+    if (Math.random() < 0.5) particle(chargeBall.position.clone().add(V(rnd(-1.5, 1.5), rnd(-1, 1.5), rnd(-1.5, 1.5))), V(0, 0, 0), 0xcff4ff, 0.25, 0.06);
+    if ((sndT -= dt) <= 0) { SFX.charge(); sndT = 0.2; }
+    return;
+  }
+  chargeBall.visible = false;
+  if (charge > 0.15) energyBeam(charge);
+  charge = 0;
+}
+function energyBeam(c) {
+  const from = man.userData.gun.localToWorld(V(0, 0, -0.8)), len = 90, width = 1.2 + c * 1.6; // fino a 4,4 m di diametro
+  const t = aimPoint(len);
+  // se il mirino è sul terreno il raggio va dritto davanti ad altezza petto, invece di piantarsi nel suolo
+  const dir = (t.y < 1 ? V(-Math.sin(yaw), 0, -Math.cos(yaw)) : t.sub(from)).normalize(), dmg = WEAPONS.energia.dmg * (0.15 + c * 0.425); // 450 → 3000
+  const tube = new THREE.CylinderGeometry(1, 1, 1, 20, 1, true).translate(0, 0.5, 0); // base nella mano, si allunga in avanti
+  const glow = mesh(tube, fadeMat(0x2a90ff, 0.25)), outer = mesh(tube, fadeMat(0x5ac8ff, 0.6)), core = mesh(tube, fadeMat(0xffffff, 0.95));
+  glow.scale.set(1.5, 1, 1.5); core.scale.set(0.45, 1, 0.45);
+  const beam = new THREE.Group(); beam.add(glow, outer, core); beam.position.copy(from); beam.quaternion.setFromUnitVectors(V(0, 1, 0), dir);
+  const head = mesh(new THREE.SphereGeometry(1, 20, 14), fadeMat(0xeaf8ff, 0.95)), g = new THREE.Group(); g.add(beam, head);
+  const mats = [glow, outer, core, head].map(m => [m.material, m.material.opacity]);
+  addFx(g, 1.4, (dt, k) => {
+    const L = len * Math.min(1, k / 0.2), s = width * (1 + Math.sin(time * 50) * 0.08);
+    beam.scale.set(s, L, s); head.position.copy(from).addScaledVector(dir, L); head.scale.setScalar(s * 1.4 * (1 + Math.sin(time * 60) * 0.1));
+    const a = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3; mats.forEach(([m, o]) => { m.opacity = o * a; });
+    if (Math.random() < 0.7) particle(head.position.clone().add(V(rnd(-2, 2), rnd(-2, 2), rnd(-2, 2))), dir.clone().multiplyScalar(10), 0xcff4ff, 0.3, 0.2);
+  });
+  const r = new THREE.Ray(from, dir);
+  for (const e of [...enemies]) {
+    const ch = chest(e), along = ch.clone().sub(from).dot(dir);
+    if (along > 0 && along < len && r.distanceToPoint(ch) < width * 0.75 + (e.userData.boss ? e.userData.rad * 1.5 : 1)) damage(e, dmg);
+  }
+  burst(from, 0xcff4ff, 20, 6); SFX.blast(); shake = 0.2 + c * 0.2; magicCd = WEAPONS.energia.cd;
+}
+
+// colpo alla testa = danno doppio, con il numero del danno vicino al mirino (giallo se in testa)
+let dmgT = 0;
+function hitEnemy(e, d, head) {
+  if (head) d *= 2;
+  damage(e, d);
+  const n = $('dmgnum'); n.textContent = (head ? '🎯 ' : '') + Math.round(d); n.style.color = head ? '#ffd23a' : '#fff'; n.style.opacity = 1; dmgT = 0.35;
+  if (head) SFX.head();
 }
 
 function breathe(dt, fwd) {
@@ -619,6 +1051,28 @@ function tornado() {
   scene.add(g); tornadoes.push({ o: g, vel: f.multiplyScalar(16), life: 3.5 });
   SFX.wind();
 }
+// barrette di cioccolato: proiettili veri che volano verso il mirino
+const bars = [], barG = new THREE.BoxGeometry(0.3, 0.1, 0.7), wrapG = new THREE.BoxGeometry(0.32, 0.12, 0.3);
+const chocM = M(0x6b3a1e), wrapM = M(0xcc2222);
+function launchBar(from) {
+  ray.setFromCamera(new THREE.Vector2(rnd(-0.01, 0.01), rnd(-0.01, 0.01)), camera);
+  const minD = camera.position.distanceTo(from);
+  const hit = ray.intersectObjects([ground, ...enemies], true).find(h => h.distance > minD);
+  const dir = (hit ? hit.point : ray.ray.at(100, V())).sub(from).normalize();
+  const g = new THREE.Group(); g.add(mesh(barG, chocM), mesh(wrapG, wrapM, 0, 0, 0.22));
+  g.position.copy(from); g.lookAt(from.clone().add(dir));
+  scene.add(g); bars.push({ o: g, vel: dir.multiplyScalar(55), life: 2 });
+}
+function updateBars(dt) {
+  for (const b of [...bars]) {
+    const p = b.o.position; p.addScaledVector(b.vel, dt); b.o.rotateZ(dt * 15);
+    const e = enemies.find(e => Math.hypot(e.position.x - p.x, e.position.z - p.z) < e.userData.rad + 0.5
+      && p.y > e.position.y && p.y < e.position.y + 2.6 * e.scale.y);
+    if (e) { explode(p, WEAPONS.choco.splash, WEAPONS.choco.dmg, true); burst(p, 0x6b3a1e, 12, 6); }
+    if (e || (b.life -= dt) <= 0 || p.y < 0) { scene.remove(b.o); bars.splice(bars.indexOf(b), 1); }
+  }
+}
+
 function updateTornadoes(dt) {
   for (const t of [...tornadoes]) {
     const p = t.o.position;
@@ -638,28 +1092,103 @@ const flat = o => Math.hypot(o.position.x - P.x, o.position.z - P.z);
 function tryOpen() {
   const c = crates.find(c => flat(c) < 2.8);
   if (!c || state !== 'play') return;
-  scene.remove(c); crates.splice(crates.indexOf(c), 1); opened++; SFX.crate();
+  scene.remove(c); crates.splice(crates.indexOf(c), 1); SFX.crate();
+  if (c.userData.magic) { // cassa magica: un potere elementale
+    burst(c.position.clone().setY(1), 0xd080ff, 30, 6);
+    const k = Math.random() < 0.08 ? 'sfera' : MAGIC_KEYS[Math.floor(rnd(0, MAGIC_KEYS.length))]; // la Sfera Suprema esce solo l'8% delle volte
+    if (k === 'sfera') toast('🌕 MITICA! SFERA SUPREMA!');
+    return addItem('magic', c.position, k);
+  }
+  opened++;
   burst(c.position.clone().setY(1), 0xd4a017, 20, 5);
+  addItem('cons', c.position.clone().add(V(1.6, 0, 0)), CONSUMABLES[Math.floor(rnd(0, CONSUMABLES.length))]); // ogni cassa ha anche un consumabile
   if (opened % 2 === 0) {
     const f = FORM_ORDER[(opened / 2 - 1) % FORM_ORDER.length];
     addItem('power', c.position, f); toast(`Trasformazione ${FORMS[f].name} apparsa!`);
   } else give(CRATE_WEAPONS[Math.floor(rnd(0, CRATE_WEAPONS.length))]);
 }
-function give(k) { ammo[k] = (ammo[k] || 0) + WEAPONS[k].ammo; cur = k; toast(WEAPONS[k].name + '!'); SFX.pick(); }
-function cycle() {
-  const owned = Object.keys(WEAPONS).filter(k => ammo[k]);
-  cur = owned[(owned.indexOf(cur) + 1) % owned.length];
+const freeHot = () => slots.slice(0, HOT).indexOf(null);
+const freeBag = () => slots.indexOf(null, BAG0);
+// consumabili e magie si raccolgono solo se c'è posto (barra, slot magico o zaino)
+function canTake(k) {
+  const w = WEAPONS[k];
+  if (slots.includes(k)) return !w.max || ammo[k] < w.max;
+  return (w.magic ? !slots[MAGIC_SLOT] : freeHot() >= 0) || freeBag() >= 0;
+}
+function give(k, n) {
+  const w = WEAPONS[k];
+  if (!slots.includes(k)) {
+    let i = w.magic ? (slots[MAGIC_SLOT] ? -1 : MAGIC_SLOT) : freeHot();
+    if (i < 0 && freeBag() >= 0) { i = freeBag(); toast(`${w.name} messo nello ZAINO`); }
+    if (i < 0) { // tutto pieno: l'arma nuova sostituisce quella in mano
+      i = cur !== 'rifle' && slots.indexOf(cur) < HOT ? slots.indexOf(cur) : HOT - 1;
+      delete ammo[slots[i]]; toast(`${WEAPONS[slots[i]].name} lasciato per ${w.name}`);
+    }
+    slots[i] = k;
+  }
+  ammo[k] = w.magic ? Infinity : Math.min(w.max || Infinity, (ammo[k] || 0) + (n ?? w.ammo));
+  if (!w.use && slots.indexOf(k) <= MAGIC_SLOT) cur = k; // i consumabili non cambiano l'arma in mano
+  if (msgT <= 0) toast(w.name + '!');
+  SFX.pick();
+}
+function cycle(dir = 1) {
+  if (form === 'mage') { tech = (tech + dir + TECHS.length) % TECHS.length; return toast(`🔮 ${TECHS[tech]}`); }
+  const owned = slots.slice(0, HOT + 1).filter(Boolean);
+  cur = owned[(owned.indexOf(cur) + dir + owned.length) % owned.length];
+}
+function pick(i) {
+  if (form === 'mage') { if (i < TECHS.length) { tech = i; toast(`🔮 ${TECHS[tech]}`); } return; } // da Mago i tasti 1-4 scelgono la tecnica
+  if (i <= MAGIC_SLOT && slots[i]) cur = slots[i];
+}
+function startUse() {
+  const w = WEAPONS[cur];
+  if (w.heal && hp >= w.upTo) return toast(`Salute già a ${w.upTo}: non puoi usare ${w.name}`);
+  if (w.shield && shield >= w.upTo) return toast(`Scudo già a ${w.upTo}`);
+  useK = cur; useT = 0;
+}
+function updateUse(dt) {
+  if (!useK) return $('use').style.display = 'none';
+  if (cur !== useK || form !== 'man') { useK = null; return; } // annullato cambiando arma o trasformandosi
+  const w = WEAPONS[useK]; useT += dt;
+  $('use').style.display = 'block';
+  $('usetxt').textContent = `${w.name}… ${Math.max(0, w.use - useT).toFixed(1)}s`;
+  $('usebar').style.width = Math.min(100, useT / w.use * 100) + '%';
+  if (useT < w.use) return;
+  if (w.heal) hp = Math.min(w.upTo, hp + w.heal);
+  if (w.shield) shield = Math.min(w.upTo, shield + w.shield);
+  SFX.pick(); toast(w.heal ? `+${w.heal} salute` : `+${w.shield} scudo`);
+  if (--ammo[useK] <= 0) { delete ammo[useK]; slots[slots.indexOf(useK)] = null; cur = 'rifle'; }
+  useK = null;
+}
+let slotsDrawn = '';
+function drawSlots() {
+  const key = slots.slice(0, HOT + 1).map(k => k + ':' + ammo[k]).join() + cur + form + Math.ceil(magicCd * 4);
+  if (key === slotsDrawn) return; // ridisegna solo quando cambia qualcosa
+  slotsDrawn = key;
+  $('slots').className = form === 'man' ? '' : 'off';
+  $('slots').innerHTML = slots.slice(0, HOT + 1).map((k, i) => slotHtml(k, i, 'slot', k === cur)).join('');
+}
+function slotHtml(k, i, attr, on) {
+  const spec = i === MAGIC_SLOT ? ' spec' : '', label = i < BAG0 ? i + 1 : '';
+  if (!k) return `<div class="slot empty${spec}" data-${attr}="${i}">${label}<br>${spec ? '✨' : '—'}</div>`;
+  const w = WEAPONS[k], c = RARITY[w.rar];
+  const cd = w.magic && magicCd > 0 ? `<i style="height:${Math.min(100, magicCd / w.cd * 100)}%"></i>` : ''; // ricarica della magia
+  const count = w.magic ? w.icon : ammo[k] === Infinity ? '∞' : (w.use ? 'x' : '') + ammo[k];
+  return `<div class="slot${spec}${on ? ' on' : ''}" data-${attr}="${i}" style="background:linear-gradient(${c}ee,${c}44)">${cd}${label}<br><b>${w.short}</b><br>${count}</div>`;
 }
 
 function end(win) {
-  const last = LV === LEVELS.length - 1;
-  state = !win ? 'over' : last ? 'win' : 'next'; firing = false;
+  const orcs = kills - 1; // il boss conta come un'uccisione
+  const unlocked = LV === CITY && orcs >= ORC_GOAL; // livello segreto nello spazio
+  state = !win ? 'over' : LV < CITY || unlocked ? 'next' : 'win'; firing = false;
   win ? SFX.win() : SFX.lose();
   document.exitPointerLock?.();
   $('title').textContent = { over: 'GAME OVER', next: 'LIVELLO COMPLETATO!', win: 'HAI VINTO TUTTI I LIVELLI!' }[state];
   $('title').style.color = win ? '#7f7' : '#f55';
   $('sub').innerHTML = `${CFG.foes} eliminati: <b>${kills}</b> · Casse aperte: <b>${opened}</b><br>`
+    + (unlocked ? '🚀 <b>LIVELLO SEGRETO SBLOCCATO!</b><br>' : '')
     + (state === 'next' ? `Prossimo livello: <b>${LEVELS[LV + 1].name}</b> (più difficile!)<br>` : '')
+    + (state === 'win' && LV === CITY ? `Hai eliminato ${orcs} orchi: ne servono ${ORC_GOAL} per il livello segreto nello spazio!<br>` : '')
     + `<br><b>${isTouch ? 'Tocca' : 'Clicca'} ${{ over: 'per riprovare', next: 'per continuare', win: 'per ricominciare dal primo livello' }[state]}</b>`;
   $('screen').style.display = 'flex';
 }
@@ -668,12 +1197,16 @@ function end(win) {
 addEventListener('keydown', e => {
   keys[e.code] = true;
   if (e.code === 'KeyE') tryOpen();
+  if (e.code === 'Tab' || e.code === 'KeyI') { e.preventDefault(); return state === 'bag' ? closeBag() : openBag(); }
+  if (e.code === 'Escape' && state === 'bag') return closeBag();
   if (e.code === 'KeyQ') cycle();
+  if (/^Digit[1-6]$/.test(e.code)) pick(+e.code[5] - 1);
   if (e.code === 'Space') e.preventDefault();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('mousedown', e => { if (e.button === 0) firing = true; });
 addEventListener('mouseup', e => { if (e.button === 0) firing = false; });
+addEventListener('wheel', e => { if (state === 'play') cycle(e.deltaY > 0 ? 1 : -1); });
 addEventListener('mousemove', e => {
   if (document.pointerLockElement !== renderer.domElement) return;
   yaw -= e.movementX * 0.0025;
@@ -708,6 +1241,11 @@ touchEl.addEventListener('pointerdown', e => {
   const role = e.target.dataset.b || (e.clientX < innerWidth * 0.45 && !stickBusy ? 'stick' : 'look');
   if (role === 'use') return tryOpen();
   if (role === 'swap') return cycle();
+  if (role === 'bag') return openBag();
+  const slot = [...document.querySelectorAll('.slot')].find(el => { // tocco su uno slot (l'HUD non riceve eventi)
+    const r = el.getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  });
+  if (slot && !e.target.dataset.b) return pick(+slot.dataset.slot);
   try { touchEl.setPointerCapture(e.pointerId); } catch {} // può fallire se il dito è già stato alzato
   roles.set(e.pointerId, { role, x: e.clientX, y: e.clientY });
   if (role === 'fire') firing = true;
@@ -736,6 +1274,57 @@ const release = e => {
 touchEl.addEventListener('pointerup', release);
 touchEl.addEventListener('pointercancel', release);
 
+
+// ---------- zaino (stile Fortnite): tocca un oggetto e poi la casella dove spostarlo ----------
+let bagSel = -1;
+const RAR_NAMES = ['Comune', 'Non comune', 'Rara', 'Epica', 'Leggendaria', 'Mitica'];
+function openBag() {
+  if (state !== 'play') return;
+  state = 'bag'; firing = false; bagSel = -1; useK = null;
+  drawBag(); $('bag').style.display = 'flex';
+  document.exitPointerLock?.();
+}
+function closeBag() {
+  state = 'play'; $('bag').style.display = 'none'; slotsDrawn = '';
+  if (!isTouch) renderer.domElement.requestPointerLock()?.catch?.(() => {});
+}
+function itemInfo(k) {
+  const w = WEAPONS[k], rar = `<span style="color:${RARITY[w.rar]}">${RAR_NAMES[w.rar]}</span>`;
+  if (w.magic) return `<b>${w.icon} ${w.name}</b> · ${rar} · ${w.desc} · ricarica ${w.cd}s`;
+  if (w.use) return `<b>${w.name}</b> · ${rar} · ${w.heal ? `+${w.heal} salute` : `+${w.shield} scudo`} (fino a ${w.upTo}) · ${w.use}s · hai x${ammo[k]}`;
+  return `<b>${w.name}</b> · ${rar} · danno ${w.dmg}${w.pellets > 1 ? ' x' + w.pellets : ''} · munizioni ${ammo[k] === Infinity ? '∞' : ammo[k]}`;
+}
+function drawBag(msg) {
+  const cell = i => slotHtml(slots[i], i, 'cell', false).replace('class="slot', `class="slot${i === bagSel ? ' sel' : ''}`);
+  $('bagbar').innerHTML = [0, 1, 2, 3, 4, 5].map(cell).join('');
+  $('bagpack').innerHTML = slots.slice(BAG0).map((_, j) => cell(BAG0 + j)).join('');
+  $('baginfo').innerHTML = msg || (bagSel >= 0 && slots[bagSel] ? itemInfo(slots[bagSel]) + '<br><small>Ora tocca la casella di destinazione</small>' : 'Seleziona un oggetto');
+}
+// la magia sta solo nello slot 6 o nello zaino; le altre cose non vanno nello slot 6
+const fits = (k, i) => !k || (i === MAGIC_SLOT ? !!WEAPONS[k].magic : !WEAPONS[k].magic || i >= BAG0);
+$('bag').addEventListener('click', e => {
+  const c = e.target.closest('[data-cell]'); if (!c) return;
+  const i = +c.dataset.cell;
+  if (bagSel < 0 || bagSel === i) { bagSel = slots[i] && bagSel !== i ? i : -1; return drawBag(); }
+  const a = slots[bagSel], b = slots[i];
+  if (!fits(a, i) || !fits(b, bagSel)) { bagSel = -1; return drawBag('✨ Lo slot 6 è solo per le magie, e le magie vanno nello slot 6 o nello zaino'); }
+  slots[bagSel] = b; slots[i] = a; bagSel = -1;
+  const at = slots.indexOf(cur);
+  if (at < 0 || at > MAGIC_SLOT) cur = slots.slice(0, HOT + 1).find(Boolean) || 'rifle'; // l'arma in mano è finita nello zaino
+  SFX.pick(); drawBag();
+});
+$('bagdrop').addEventListener('click', () => {
+  const k = slots[bagSel];
+  if (!k) return drawBag('Seleziona prima un oggetto da buttare');
+  if (k === 'rifle') return drawBag("Il fucile d'assalto non si può buttare");
+  const f = V(-Math.sin(yaw), 0, -Math.cos(yaw)), n = ammo[k];
+  slots[bagSel] = null; delete ammo[k]; bagSel = -1;
+  addItem(WEAPONS[k].magic ? 'magic' : WEAPONS[k].use ? 'cons' : 'gun', P.clone().addScaledVector(f, 3), k, WEAPONS[k].magic ? undefined : n);
+  if (cur === k) cur = slots.slice(0, HOT + 1).find(Boolean) || 'rifle';
+  drawBag(`${WEAPONS[k].name} buttato a terra`);
+});
+$('bagclose').addEventListener('click', closeBag);
+
 // ---------- loop ----------
 const clock = new THREE.Clock();
 function update(dt) {
@@ -749,19 +1338,27 @@ function update(dt) {
   if (keys.KeyD) mv.add(r); if (keys.KeyA) mv.sub(r);
   mv.addScaledVector(f, -joy.y).addScaledVector(r, joy.x);
   const mag = Math.min(1, mv.length()), moving = mag > 0.1;
-  const run = keys.ShiftLeft || Math.hypot(joy.x, joy.y) > 0.95;
-  const speed = form === 'dragon' ? 13 : form === 'beast' ? 15 : form === 'serpent' ? 16 : run ? 9.5 : 6;
-  if (moving) P.add(mv.normalize().multiplyScalar(speed * mag * dt));
+  const wantRun = keys.ShiftLeft || keys.ShiftRight || Math.hypot(joy.x, joy.y) > 0.95;
+  const run = wantRun && moving && form === 'man' && !tired;
+  if (run) {
+    stamina -= 20 * dt; stamRest = 1; // ~5 secondi di corsa
+    if (stamina <= 0) { stamina = 0; tired = true; }
+  } else if ((stamRest -= dt) <= 0) { // ricarica dopo 1 secondo di pausa
+    stamina = Math.min(100, stamina + 18 * dt);
+    if (tired && stamina >= 30) tired = false;
+  }
+  const speed = form === 'dragon' ? 13 : form === 'beast' ? 15 : form === 'serpent' ? 16 : form === 'mage' ? 12 : run ? 11 : 6;
+  if (moving) P.add(mv.normalize().multiplyScalar(speed * mag * (useK ? 0.5 : 1) * dt)); // più lento mentre ti curi
   if (form === 'serpent') { P.y += ((keys.Space ? 14 : 7) - P.y) * Math.min(1, dt * 3); vy = 0; } // vola: salta = sali
   else {
     if (keys.Space && P.y === 0) vy = form === 'man' ? 7.5 : 12;
-    vy -= (form === 'dragon' ? 18 : 25) * dt; P.y += vy * dt;
+    vy -= (form === 'dragon' ? 18 : 25) * (CFG.grav || 1) * dt; P.y += vy * dt;
     if (P.y <= 0) { P.y = 0; vy = 0; }
   }
   collide(P, form === 'man' ? 0.4 : 1.2);
   if (boss && !bossDead && P.z < -LEN + 3) { P.z = -LEN + 3; if (msgT <= 0) toast(`Sconfiggi ${CFG.boss} per aprire l'uscita!`); }
   player.rotation.y = yaw;
-  const sw = moving ? Math.sin(time * 12) * 0.6 : 0;
+  const sw = moving ? Math.sin(time * (run ? 18 : 12)) * (run ? 0.9 : 0.6) : 0;
   man.userData.legL.rotation.x = sw; man.userData.legR.rotation.x = -sw;
   beast.userData.legs.forEach((l, i) => { l.rotation.x = moving ? Math.sin(time * 16 + i * 1.6) * 0.7 : 0; });
   const flap = Math.sin(time * (moving || P.y > 0 ? 12 : 4)) * 0.45;
@@ -776,9 +1373,18 @@ function update(dt) {
   else if (firing && fireCd <= 0) {
     if (form === 'beast') { zap(aim); fireCd = 0.3; }
     else if (form === 'serpent') { tornado(); fireCd = 0.45; }
+    else if (form === 'mage') { mageCast(); fireCd = [0.5, 1.2, 2, 0.5][tech]; }
+    else if (WEAPONS[cur].use) { if (!useK) startUse(); fireCd = 0.3; }
+    else if (WEAPONS[cur].magic === 'energia') { /* si carica tenendo premuto: vedi updateCharge */ }
+    else if (WEAPONS[cur].magic) { if (magicCd <= 0) castMagic(cur); fireCd = 0.2; }
     else { shoot(); fireCd = WEAPONS[cur].rate; }
   }
-  updateTornadoes(dt);
+  updateUse(dt); updateCharge(dt); updateFx(dt); updateDomain(dt);
+  mage.userData.crown.rotation.y += dt * 2;
+  magicCd = Math.max(0, magicCd - dt); shake = Math.max(0, shake - dt);
+  if ((dmgT -= dt) <= 0) $('dmgnum').style.opacity = 0;
+  updateTornadoes(dt); updateBars(dt);
+  if (skyDome) skyDome.position.set(P.x, 0, P.z);
 
   // boss
   const prog = clamp(-P.z / LEN, 0, 1);
@@ -786,7 +1392,7 @@ function update(dt) {
     boss = makeBoss(); boss.position.set(0, 0, -LEN + 6); scene.add(boss); enemies.push(boss);
     $('boss').style.display = 'block'; SFX.roar(); toast(`⚠️ ARRIVA ${CFG.boss}! ⚠️`);
   }
-  if (boss && !bossDead) $('bossbar').style.width = Math.max(0, boss.userData.hp / boss.userData.max * 100) + '%';
+  if (boss && !bossDead) ui('bossbar', 'width', Math.max(0, boss.userData.hp / boss.userData.max * 100).toFixed(1) + '%');
 
   // nemici
   spawnT -= dt;
@@ -798,13 +1404,23 @@ function update(dt) {
   }
   for (const e of [...enemies]) {
     const u = e.userData; u.t += dt; u.cd -= dt;
+    if (u.stun > 0) { u.stun -= dt; continue; } // immobile durante il Dominio Stellare
     const dx = P.x - e.position.x, dz = P.z - e.position.z, d = Math.hypot(dx, dz);
     if (d > 110 && !u.boss) { scene.remove(e); enemies.splice(enemies.indexOf(e), 1); continue; }
+    // ti vedono solo entro AGGRO metri (o se li colpisci); ti perdono oltre LOSE
+    if (!u.aggro && (d < AGGRO || u.boss)) { u.aggro = true; if (!u.boss) burst(e.position.clone().setY(2.5 * e.scale.y), 0xffdd33, 4, 2); }
+    if (u.aggro && d > LOSE && !u.boss) u.aggro = false;
+    if (u.rooted > 0) u.rooted -= dt; // bloccato dalla magia della terra
+    else if (!u.aggro) { // vaga senza sapere dove sei
+      if ((u.wT = (u.wT || 0) - dt) <= 0) { u.wT = rnd(2, 5); u.wA = rnd(0, Math.PI * 2); u.wS = Math.random() < 0.4 ? 0 : u.speed * 0.3; }
+      if (u.wS) { const mx = Math.sin(u.wA), mz = Math.cos(u.wA); e.position.x += mx * u.wS * dt; e.position.z += mz * u.wS * dt; e.rotation.y = Math.atan2(-mx, -mz); collide(e.position, u.rad * 0.6); }
+    } else {
     e.rotation.y = Math.atan2(-dx, -dz);
     if (d > u.rad + (form === 'man' ? 0.5 : 1.2)) {
       e.position.x += dx / d * u.speed * dt; e.position.z += dz / d * u.speed * dt;
       if (!u.boss) collide(e.position, u.rad * 0.6);
     } else if (u.cd <= 0 && P.y < (u.boss ? 10 : 2)) { u.cd = 1; hurt(u.dmg); }
+    }
     if (u.boss && (u.shotCd -= dt) <= 0) {
       const rage = u.hp < u.max / 2; // sotto metà vita spara più spesso e più colpi
       u.shotCd = (rage ? 1.2 : 1.8) / Math.sqrt(CFG.mul); SFX.spit();
@@ -821,7 +1437,8 @@ function update(dt) {
         scene.add(m); enemies.push(m);
       }
     }
-    e.position.y = Math.abs(Math.sin(u.t * (u.boss ? 3 : 8))) * 0.15;
+    e.position.y = u.fly ? 0.8 + Math.sin(u.t * 3) * 0.6 : Math.abs(Math.sin(u.t * (u.boss ? 3 : 8))) * 0.15;
+    if (u.wings) { const f = Math.sin(u.t * 10) * 0.5; u.wings[0].rotation.z = f; u.wings[1].rotation.z = -f; }
     if (u.legs) { const s = Math.sin(u.t * 8) * 0.5; u.legs[0].rotation.x = s; u.legs[1].rotation.x = -s; }
     u.flash -= dt; u.mat.emissive.setHex(u.flash > 0 ? 0xaaaaaa : u.glow || 0);
   }
@@ -829,16 +1446,17 @@ function update(dt) {
     s.m.position.addScaledVector(s.vel, dt);
     const hit = s.m.position.distanceTo(P.clone().setY(P.y + 1)) < (form === 'man' ? 1.3 : 2.2);
     if (hit) hurt(15);
-    if (hit || (s.life -= dt) <= 0 || s.m.position.y < 0) { scene.remove(s.m); shots.splice(shots.indexOf(s), 1); }
+    if (hit || (s.life -= dt) <= 0 || s.m.position.y < 0) { scene.remove(s.m); s.m.material.dispose(); shots.splice(shots.indexOf(s), 1); }
   }
 
   // oggetti
   for (const it of [...items]) {
     it.o.rotation.y += dt * 2; it.o.position.y = 1 + Math.sin(time * 3) * 0.2;
     if (flat(it.o) > 2) continue;
+    // consumabili: non si raccolgono se non c'è posto (come le armi, ma senza scambiare quella in mano)
+    if (it.type !== 'gun' && it.type !== 'power' && !canTake(it.data)) continue;
     scene.remove(it.o); items.splice(items.indexOf(it), 1);
-    if (it.type === 'gun') give(it.data);
-    else if (it.type === 'health') { hp = Math.min(100, hp + 25); toast('+25 salute'); SFX.pick(); }
+    if (it.type !== 'power') give(it.data, it.n);
     else { setForm(it.data); formT = 20; SFX.transform(); toast(`${FORMS[it.data].name}! ${FORMS[it.data].help}`); }
   }
   if (form === 'dragon' && Math.random() < 0.3) particle(dragon.userData.flame.getWorldPosition(V()), V(0, 2, 0), 0xff9922, 0.3, 0.12);
@@ -846,23 +1464,27 @@ function update(dt) {
 
   // effetti
   for (const l of [...lines]) if ((l.life -= dt) <= 0) { scene.remove(l.o); l.o.geometry.dispose(); l.o.material.dispose(); lines.splice(lines.indexOf(l), 1); }
-  for (const p of [...parts]) {
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
     p.life -= dt;
-    if (p.life <= 0) { scene.remove(p.m); p.m.material.dispose(); parts.splice(parts.indexOf(p), 1); continue; }
+    if (p.life <= 0) { scene.remove(p.m); partPool.push(p.m); parts[i] = parts[parts.length - 1]; parts.pop(); continue; }
     p.m.position.addScaledVector(p.vel, dt);
     const k = 1 - p.life / p.max;
     p.m.scale.setScalar(p.size * (1 + p.grow * k)); p.m.material.opacity = 1 - k;
   }
 
-  // HUD
-  const near = crates.some(c => flat(c) < 2.8);
-  $('hint').textContent = near ? (isTouch ? 'Tocca APRI per aprire la cassa' : 'Premi E per aprire la cassa') : '';
-  $('hpbar').style.width = Math.max(0, hp) + '%';
-  $('weapon').innerHTML = form === 'dragon' ? '🔥 Fuoco' : form === 'beast' ? '⚡ Fulmini' : form === 'serpent' ? '🌪️ Tornado' : `${WEAPONS[cur].name}<br>${cur === 'rifle' ? '∞' : ammo[cur]}`;
-  $('info').textContent = `Liv ${LV + 1} · ${CFG.foes}: ${kills} · Casse: ${opened}`;
-  $('progbar').style.width = prog * 100 + '%';
-  $('form').textContent = form === 'man' ? '' : `${FORMS[form].name} ${Math.ceil(formT)}s`;
-  $('form').style.color = $('cross').style.borderColor = form === 'man' ? '#fff' : FORMS[form].color;
+  // HUD (ui() tocca la pagina solo se il valore è cambiato)
+  const near = crates.find(c => flat(c) < 2.8);
+  ui('hint', 'text', near ? `${isTouch ? 'Tocca APRI' : 'Premi E'} per aprire la cassa${near.userData.magic ? ' MAGICA ✨' : ''}` : '');
+  ui('hpbar', 'width', clamp(Math.round(hp), 0, 100) + '%');
+  ui('shbar', 'width', clamp(Math.round(shield), 0, 100) + '%');
+  ui('stbar', 'width', Math.round(stamina) + '%'); ui('stbar', 'class', tired ? 'tired' : '');
+  drawSlots();
+  ui('weapon', 'html', form === 'dragon' ? '🔥 Fuoco' : form === 'beast' ? '⚡ Fulmini' : form === 'serpent' ? '🌪️ Tornado' : form === 'mage' ? `🔮 ${TECHS[tech]}${tech === 3 && domainUsed ? ' (usato)' : ''}` : `<span style="color:${RARITY[WEAPONS[cur].rar]}">${WEAPONS[cur].name}</span><br>${ammo[cur] === Infinity ? '∞' : (WEAPONS[cur].use ? 'x' : '') + ammo[cur]}`);
+  ui('info', 'text', `Liv ${LV + 1} · ${CFG.foes}: ${kills}${LV === CITY ? '/' + ORC_GOAL : ''} · Casse: ${opened}`);
+  ui('progbar', 'width', (prog * 100).toFixed(1) + '%');
+  ui('form', 'text', form === 'man' ? '' : `${FORMS[form].name} ${Math.ceil(formT)}s`);
+  const fc = form === 'man' ? '#fff' : FORMS[form].color; ui('form', 'color', fc); ui('cross', 'borderColor', fc);
   if ((msgT -= dt) <= 0) $('msg').textContent = '';
   if (bossDead && P.z < -LEN) end(true);
 }
@@ -870,7 +1492,7 @@ function update(dt) {
 function updateCamera() {
   const fwd = V(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
   const right = V(Math.cos(yaw), 0, -Math.sin(yaw));
-  const [h, dist, side] = form === 'dragon' ? [4, 8, 0] : form === 'beast' ? [3, 6, 0] : form === 'serpent' ? [5, 12, 0] : [2, 4.5, 0.9];
+  const [h, dist, side] = form === 'dragon' ? [4, 8, 0] : form === 'beast' ? [3, 6, 0] : form === 'serpent' ? [5, 12, 0] : form === 'mage' ? [2.6, 5.5, 0.9] : [2, 4.5, 0.9];
   const target = P.clone().add(V(0, h, 0)).addScaledVector(right, side);
   // avvicina la telecamera se finirebbe dentro un palazzo o un albero
   const near = trees.filter(t => t.h && Math.hypot(t.x - P.x, t.z - P.z) < dist + t.r + 2);
@@ -881,16 +1503,34 @@ function updateCamera() {
   }
   camera.position.y = Math.max(camera.position.y, 0.4);
   camera.lookAt(target.add(fwd));
+  if (shake > 0) camera.position.add(V(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).multiplyScalar(shake * 0.6));
 }
 
+const uiCache = {};
+function ui(id, key, v) {
+  if (uiCache[id + key] === v) return;
+  uiCache[id + key] = v;
+  const el = $(id);
+  if (key === 'text') el.textContent = v; else if (key === 'html') el.innerHTML = v; else if (key === 'class') el.className = v; else el.style[key] = v;
+}
+// 5. qualità automatica: se per 2 secondi si va sotto i 40 fps, abbassa la risoluzione (fino a 0,6)
+let fpsTime = 0, fpsFrames = 0, quality = renderer.getPixelRatio();
 function loop() {
   requestAnimationFrame(loop);
   fit();
-  const dt = Math.min(clock.getDelta(), 0.05);
-  if (state === 'play') update(dt);
+  const raw = clock.getDelta(), dt = Math.min(raw, 0.05);
+  if (state === 'play') {
+    fpsTime += raw; fpsFrames++;
+    if (fpsTime > 2) {
+      if (fpsFrames / fpsTime < 40 && quality > 0.6) { quality = Math.max(0.6, quality - 0.2); renderer.setPixelRatio(quality); }
+      fpsTime = fpsFrames = 0;
+    }
+    update(dt);
+  }
   updateCamera();
   renderer.render(scene, camera);
 }
 loop();
+window.gameReady = true;
 </script>
 </body>
