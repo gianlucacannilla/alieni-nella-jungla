@@ -21,7 +21,7 @@
   #msg{position:absolute;left:50%;top:28%;transform:translateX(-50%);font-size:clamp(18px,4vw,30px);font-weight:bold;text-align:center;width:90vw}
   #hint{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);font-size:20px}
   #hit{position:fixed;inset:0;background:radial-gradient(transparent 45%,#f00a);opacity:0;pointer-events:none;transition:opacity .25s}
-  #touch{position:fixed;inset:0;display:none;touch-action:none}
+  #touch{position:fixed;inset:0;display:none;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   #touch .b{position:absolute;border-radius:50%;background:#fff3;border:2px solid #fff8;color:#fff;font:bold 13px system-ui;display:flex;align-items:center;justify-content:center}
   #bFire{right:24px;bottom:30px;width:96px;height:96px;background:#f445!important}
   #bJump{right:136px;bottom:20px;width:66px;height:66px}
@@ -139,10 +139,12 @@ const SKY = 0x2a4a2a;
 scene.background = new THREE.Color(SKY);
 scene.fog = new THREE.Fog(SKY, 15, 90);
 const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 300);
-addEventListener('resize', () => {
-  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-});
+// controllato a ogni frame: su telefono l'evento resize alla rotazione arriva con misure vecchie
+function fit() {
+  const w = innerWidth, h = innerHeight, c = renderer.domElement;
+  if (c.clientWidth === w && c.clientHeight === h) return;
+  camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.setSize(w, h);
+}
 scene.add(new THREE.HemisphereLight(0xcfffcf, 0x223311, 1.3));
 const sun = new THREE.DirectionalLight(0xffffee, 1.2); sun.position.set(30, 50, 10); scene.add(sun);
 
@@ -402,6 +404,16 @@ function hurt(d) {
 // le trasformazioni uccidono con un colpo tutti tranne il boss
 const formDmg = (e, bossDmg) => e.userData.boss ? bossDmg : 99999;
 
+// mira assistita su telefono: l'alieno più vicino entro ~8° dal mirino
+function assist(r) {
+  let best = null, bd = 60;
+  for (const e of enemies) {
+    const v = chest(e).sub(r.origin), d = v.length();
+    if (d < bd && v.normalize().dot(r.direction) > 0.99) { bd = d; best = e; }
+  }
+  return best;
+}
+
 function shoot() {
   const w = WEAPONS[cur];
   const muzzle = man.userData.gun.localToWorld(V(0, 0, -0.55));
@@ -411,10 +423,11 @@ function shoot() {
     let endP = ray.ray.at(90, V());
     if (w.pierce) {
       new Set(hits.map(h => h.object.userData.root).filter(Boolean)).forEach(e => damage(e, w.dmg));
-    } else if (hits.length) {
-      endP = hits[0].point;
-      const e = hits[0].object.userData.root;
-      if (w.splash) explode(endP, w.splash, w.dmg);
+    } else {
+      let e = hits[0]?.object.userData.root;
+      if (!e && isTouch && (e = assist(ray.ray))) endP = chest(e);
+      else if (hits.length) endP = hits[0].point;
+      if (w.splash && (e || hits.length)) explode(endP, w.splash, w.dmg);
       else if (e) { damage(e, w.dmg); burst(endP, 0x88ff44, 3, 3); }
     }
     line([muzzle, endP], w.color, w.pierce ? 0.15 : 0.05);
@@ -518,10 +531,11 @@ document.addEventListener('pointerlockchange', () => {
 const touchEl = $('touch'), stickEl = $('stick'), knob = $('knob'), roles = new Map();
 touchEl.addEventListener('pointerdown', e => {
   e.preventDefault();
-  const role = e.target.dataset.b || (e.clientX < innerWidth * 0.45 ? 'stick' : 'look');
+  const stickBusy = [...roles.values()].some(r => r.role === 'stick');
+  const role = e.target.dataset.b || (e.clientX < innerWidth * 0.45 && !stickBusy ? 'stick' : 'look');
   if (role === 'use') return tryOpen();
   if (role === 'swap') return cycle();
-  touchEl.setPointerCapture(e.pointerId);
+  try { touchEl.setPointerCapture(e.pointerId); } catch {} // può fallire se il dito è già stato alzato
   roles.set(e.pointerId, { role, x: e.clientX, y: e.clientY });
   if (role === 'fire') firing = true;
   if (role === 'jump') keys.Space = true;
@@ -676,6 +690,7 @@ function updateCamera() {
 
 function loop() {
   requestAnimationFrame(loop);
+  fit();
   const dt = Math.min(clock.getDelta(), 0.05);
   if (state === 'play') update(dt);
   updateCamera();
