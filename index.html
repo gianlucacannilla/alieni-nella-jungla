@@ -33,7 +33,7 @@
   .touch #weapon{bottom:auto;top:12px;font-size:16px}
   .touch #info{font-size:14px}
   .touch #hint{bottom:auto;top:62%}
-  #screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000b;text-align:center;cursor:pointer;padding:16px;box-sizing:border-box}
+  #screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000b;text-align:center;cursor:pointer;touch-action:manipulation;padding:16px;box-sizing:border-box}
   #screen h1{font-size:clamp(30px,7vw,52px);color:#7f7;margin:0 0 12px}
   #screen p{font-size:clamp(14px,2.5vw,18px);line-height:1.6;max-width:640px}
   #screen b{color:#ffa030}
@@ -529,6 +529,10 @@ document.addEventListener('pointerlockchange', () => {
 
 // ---------- input: touch ----------
 const touchEl = $('touch'), stickEl = $('stick'), knob = $('knob'), roles = new Map();
+// Safari ignora user-scalable=no: blocca a mano pinch-zoom e doppio tocco
+for (const t of ['gesturestart', 'gesturechange']) document.addEventListener(t, e => e.preventDefault());
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+touchEl.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
 touchEl.addEventListener('pointerdown', e => {
   e.preventDefault();
   const stickBusy = [...roles.values()].some(r => r.role === 'stick');
