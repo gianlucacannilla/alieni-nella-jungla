@@ -289,8 +289,9 @@ function makeAlien(big) {
 }
 function makeBoss() {
   const e = makeAlien(true);
-  e.scale.setScalar(4.5);
-  e.userData.mat.color.setHex(0xb01030);
+  e.scale.setScalar(5.5);
+  e.userData.mat.color.setHex(0xd01838);
+  e.userData.glow = 0x661010; // bagliore per vederla anche nella nebbia
   for (const x of [-0.45, 0.45]) e.add(Object.assign(mesh(new THREE.ConeGeometry(0.12, 0.8, 6), M(0x222222), x, 2.7, -0.2), { userData: { root: e } }));
   Object.assign(e.userData, { hp: 4000, max: 4000, speed: 3, dmg: 30, rad: 3.2, boss: true, shotCd: 3 });
   return e;
@@ -606,7 +607,7 @@ function update(dt) {
 
   // boss
   const prog = clamp(-P.z / LEN, 0, 1);
-  if (!boss && P.z < -LEN + 70) {
+  if (!boss && P.z < -LEN + 35) { // all'ingresso della radura, così la si vede bene
     boss = makeBoss(); boss.position.set(0, 0, -LEN + 6); scene.add(boss); enemies.push(boss);
     $('boss').style.display = 'block'; SFX.roar(); toast('ARRIVA LA REGINA ALIENA!');
   }
@@ -638,7 +639,7 @@ function update(dt) {
       }
     }
     e.position.y = Math.abs(Math.sin(u.t * (u.boss ? 3 : 8))) * 0.15;
-    u.flash -= dt; u.mat.emissive.setHex(u.flash > 0 ? 0xaaaaaa : 0);
+    u.flash -= dt; u.mat.emissive.setHex(u.flash > 0 ? 0xaaaaaa : u.glow || 0);
   }
   for (const s of [...shots]) {
     s.m.position.addScaledVector(s.vel, dt);
